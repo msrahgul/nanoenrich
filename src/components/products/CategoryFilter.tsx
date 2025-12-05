@@ -19,10 +19,10 @@ export function CategoryFilter({ selectedCategory, onSelectCategory }: CategoryF
           size="sm"
           onClick={() => onSelectCategory(category)}
           className={cn(
-            "transition-all border-[#5E3A86]",
-            selectedCategory === category 
-              ? "bg-[#5E3A86] hover:bg-[#5E3A86]/90 text-white shadow-md" 
-              : "bg-transparent text-[#5E3A86] hover:bg-[#5E3A86]/10"
+            "transition-all border-secondary",
+            selectedCategory === category
+              ? "bg-secondary hover:bg-secondary/90 text-white shadow-md"
+              : "bg-transparent text-secondary hover:bg-secondary/10"
           )}
         >
           {category}

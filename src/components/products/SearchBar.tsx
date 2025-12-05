@@ -10,13 +10,13 @@ interface SearchBarProps {
 export function SearchBar({ value, onChange, placeholder = 'Search products...' }: SearchBarProps) {
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#7EC242]" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
       <Input
         type="text"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-10 focus-visible:ring-[#5E3A86]"
+        className="pl-10 focus-visible:ring-secondary"
       />
     </div>
   );

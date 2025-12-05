@@ -95,7 +95,7 @@ const Checkout = () => {
           Back to Cart
         </button>
 
-        <h1 className="font-serif text-3xl font-bold text-[#5E3A86] mb-8">Checkout</h1>
+        <h1 className="font-serif text-3xl font-bold text-secondary mb-8">Checkout</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Checkout Form */}
@@ -204,7 +204,7 @@ const Checkout = () => {
                   <Button
                     type="submit"
                     variant="default"
-                    className="w-full bg-[#7EC242] hover:bg-[#7EC242]/90 text-white"
+                    className="w-full bg-primary hover:bg-primary/90 text-white"
                     disabled={isProcessing}
                   >
                     {isProcessing ? (
@@ -265,7 +265,7 @@ const Checkout = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="text-[#7EC242]">Free</span>
+                    <span className="text-primary">Free</span>
                   </div>
                 </div>
 

@@ -37,9 +37,9 @@ export function Navbar() {
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  "text-sm font-medium transition-colors hover:text-[#7EC242]",
+                  "text-sm font-medium transition-colors hover:text-primary",
                   location.pathname === link.path
-                    ? "text-[#5E3A86]"
+                    ? "text-secondary"
                     : "text-muted-foreground"
                 )}
               >
@@ -60,7 +60,7 @@ export function Navbar() {
               <Button variant="ghost" size="icon">
                 <ShoppingCart className="h-5 w-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#7EC242] text-white text-xs flex items-center justify-center font-medium">
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-medium">
                     {totalItems}
                   </span>
                 )}
@@ -88,12 +88,12 @@ export function Navbar() {
                   key={link.path}
                   to={link.path}
                   onClick={() => setIsOpen(false)}
-className={cn(
-  "text-sm font-medium transition-colors hover:text-[#7EC242] py-2",
-  location.pathname === link.path
-    ? "text-[#5E3A86]"
-    : "text-muted-foreground"
-)}
+                  className={cn(
+                    "text-sm font-medium transition-colors hover:text-primary py-2",
+                    location.pathname === link.path
+                      ? "text-secondary"
+                      : "text-muted-foreground"
+                  )}
                 >
                   {link.name}
                 </Link>

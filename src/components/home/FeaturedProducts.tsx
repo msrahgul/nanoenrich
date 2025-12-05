@@ -23,7 +23,7 @@ export function FeaturedProducts() {
           <Link to="/products" className="mt-4 md:mt-0">
             <Button variant="ghost" className="group">
               View All Products
-              <ArrowRight className="ml-2 h-4 w-4 text-[#7EC242] transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="ml-2 h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
         </div>

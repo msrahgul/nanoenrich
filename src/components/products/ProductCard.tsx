@@ -29,7 +29,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           {discount > 0 && (
-            <Badge className="absolute top-3 left-3 bg-[#7EC242] text-white">
+            <Badge className="absolute top-3 left-3 bg-primary text-white">
               -{discount}%
             </Badge>
           )}
@@ -40,34 +40,34 @@ export function ProductCard({ product, className }: ProductCardProps) {
           )}
         </div>
       </Link>
-      
+
       <CardContent className="p-4">
         <Link to={`/product/${product.id}`}>
-          <Badge className="mb-2 text-xs bg-[#5E3A86]/10 text-[#5E3A86] hover:bg-[#5E3A86]/20 border-none">
+          <Badge className="mb-2 text-xs bg-secondary/10 text-secondary hover:bg-secondary/20 border-none">
             {product.category}
           </Badge>
-          <h3 className="font-semibold text-foreground mb-1 group-hover:text-[#5E3A86] transition-colors line-clamp-1">
+          <h3 className="font-semibold text-foreground mb-1 group-hover:text-secondary transition-colors line-clamp-1">
             {product.name}
           </h3>
           <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
             {product.description}
           </p>
         </Link>
-        
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-[#5E3A86]">₹{product.price}</span>
+            <span className="text-lg font-bold text-secondary">₹{product.price}</span>
             {product.originalPrice && (
               <span className="text-sm text-muted-foreground line-through">
                 ₹{product.originalPrice}
               </span>
             )}
           </div>
-          
+
           <Button
-              className="bg-[#7EC242] hover:bg-[#7EC242]/90 text-white border-none"
-              size="sm"
-              onClick={(e) => {
+            className="bg-primary hover:bg-primary/90 text-white border-none"
+            size="sm"
+            onClick={(e) => {
               e.preventDefault();
               addToCart(product);
             }}

@@ -19,13 +19,13 @@ export function Footer() {
               Empowering Life Through Eco-Nano Innovation
             </p>
             <div className="flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-[#7EC242] transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-[#7EC242] transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-[#7EC242] transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 <Twitter className="h-5 w-5" />
               </a>
             </div>
@@ -33,25 +33,25 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-[#5E3A86] mb-4">Quick Links</h3>
+            <h3 className="font-semibold text-secondary mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/products" className="text-sm text-muted-foreground hover:text-[#7EC242] transition-colors">
+                <Link to="/products" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   All Products
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-sm text-muted-foreground hover:text-[#7EC242] transition-colors">
+                <Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-sm text-muted-foreground hover:text-[#7EC242] transition-colors">
+                <Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Contact
                 </Link>
               </li>
               <li>
-                <Link to="/cart" className="text-sm text-muted-foreground hover:text-[#7EC242] transition-colors">
+                <Link to="/cart" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Shopping Cart
                 </Link>
               </li>
@@ -60,25 +60,25 @@ export function Footer() {
 
           {/* Categories */}
           <div>
-            <h3 className="font-semibold text-[#5E3A86] mb-4">Categories</h3>
+            <h3 className="font-semibold text-secondary mb-4">Categories</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/products?category=Skincare" className="text-sm text-muted-foreground hover:text-[#7EC242] transition-colors">
+                <Link to="/products?category=Skincare" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Skincare
                 </Link>
               </li>
               <li>
-                <Link to="/products?category=Supplements" className="text-sm text-muted-foreground hover:text-[#7EC242] transition-colors">
+                <Link to="/products?category=Supplements" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Supplements
                 </Link>
               </li>
               <li>
-                <Link to="/products?category=Hair Care" className="text-sm text-muted-foreground hover:text-[#7EC242] transition-colors">
+                <Link to="/products?category=Hair Care" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Hair Care
                 </Link>
               </li>
               <li>
-                <Link to="/products?category=Wellness" className="text-sm text-muted-foreground hover:text-[#7EC242] transition-colors">
+                <Link to="/products?category=Wellness" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Wellness
                 </Link>
               </li>
@@ -87,10 +87,10 @@ export function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h3 className="font-semibold text-[#5E3A86] mb-4">Contact Us</h3>
+            <h3 className="font-semibold text-secondary mb-4">Contact Us</h3>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-[#7EC242] mt-0.5" />
+                <MapPin className="h-4 w-4 text-primary mt-0.5" />
                 <span className="text-sm text-muted-foreground">
                   54/1, 2nd Street
                   Near Cauvery Tank,
@@ -99,11 +99,11 @@ export function Footer() {
                 </span>
               </li>
               <li className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-[#7EC242]" />
+                <Phone className="h-4 w-4 text-primary" />
                 <span className="text-sm text-muted-foreground">+91 88701 73412</span>
               </li>
               <li className="flex items-center gap-3">
-                <Mail className="h-4 w-4 text-[#7EC242]" />
+                <Mail className="h-4 w-4 text-primary" />
                 <span className="text-sm text-muted-foreground">nanoenrich@gmail.com</span>
               </li>
             </ul>

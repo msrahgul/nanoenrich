@@ -15,14 +15,14 @@ const Cart = () => {
         <div className="container mx-auto px-4 py-16">
           <div className="text-center max-w-md mx-auto">
             <div className="w-20 h-20 rounded-full bg-accent flex items-center justify-center mx-auto mb-6">
-              <ShoppingBag className="h-10 w-10 text-[#7EC242]" />
+              <ShoppingBag className="h-10 w-10 text-primary" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-4">Your Cart is Empty</h1>
             <p className="text-muted-foreground mb-8">
               Looks like you haven't added any products to your cart yet. Start shopping to fill it up!
             </p>
             <Link to="/products">
-              <Button className="bg-[#7EC242] hover:bg-[#7EC242]/90 text-white" size="lg">
+              <Button className="bg-primary hover:bg-primary/90 text-white" size="lg">
                 Browse Products
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -36,7 +36,7 @@ const Cart = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="font-serif text-3xl font-bold text-[#5E3A86] mb-8">Shopping Cart</h1>
+        <h1 className="font-serif text-3xl font-bold text-secondary mb-8">Shopping Cart</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
@@ -55,7 +55,7 @@ const Cart = () => {
 
                     <div className="flex-1 min-w-0">
                       <Link to={`/product/${item.product.id}`}>
-                        <h3 className="font-semibold text-foreground hover:text-[#5E3A86] transition-colors truncate">
+                        <h3 className="font-semibold text-foreground hover:text-secondary transition-colors truncate">
                           {item.product.name}
                         </h3>
                       </Link>
@@ -124,7 +124,7 @@ const Cart = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-[#7EC242] font-medium">Free</span>
+                  <span className="text-primary font-medium">Free</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
@@ -134,7 +134,7 @@ const Cart = () => {
               </CardContent>
               <CardFooter>
                 <Link to="/checkout" className="w-full">
-                  <Button className="w-full bg-[#7EC242] hover:bg-[#7EC242]/90 text-white" size="lg">
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-white" size="lg">
                     Proceed to Checkout
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>

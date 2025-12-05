@@ -28,21 +28,21 @@ export const useProducts = () => {
 
 export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<Product[]>(() => {
-    const stored = localStorage.getItem('admin_products');
+    const stored = localStorage.getItem('nanoenrich_products');
     return stored ? JSON.parse(stored) : initialProducts;
   });
 
   const [categories, setCategories] = useState<string[]>(() => {
-    const stored = localStorage.getItem('admin_categories');
+    const stored = localStorage.getItem('nanoenrich_categories');
     return stored ? JSON.parse(stored) : initialCategories;
   });
 
   useEffect(() => {
-    localStorage.setItem('admin_products', JSON.stringify(products));
+    localStorage.setItem('nanoenrich_products', JSON.stringify(products));
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem('admin_categories', JSON.stringify(categories));
+    localStorage.setItem('nanoenrich_categories', JSON.stringify(categories));
   }, [categories]);
 
   const addProduct = (product: Omit<Product, 'id'>) => {

@@ -11,141 +11,142 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 0 0% 9%;
+    /* --- Bamboo Theme with Logo Harmony --- */
 
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 9%;
+    /* Background: Warm Bamboo Beige (Off-white/Cream) */
+    --background: 45 30% 96%;
+    /* Foreground: Dark Earthy Green (instead of black) for text */
+    --foreground: 120 20% 15%;
 
-    --popover: 0 0% 89%;
-    --popover-foreground: 0 0% 9%;
+    /* Card: Lighter Cream/White */
+    --card: 45 30% 98%;
+    --card-foreground: 120 20% 15%;
 
-    --primary: 161 93% 30%;
-    --primary-foreground: 151 80% 95%;
+    /* Popover: Matches Card */
+    --popover: 45 30% 98%;
+    --popover-foreground: 120 20% 15%;
 
-    --secondary: 0 0% 32%;
+    /* Primary: LOGO GREEN (#7EC242) -> Bamboo Fresh Green */
+    --primary: 92 53% 51%;
+    --primary-foreground: 0 0% 100%; /* White text on green buttons */
+
+    /* Secondary: LOGO PURPLE (#5E3A86) -> Used for Headings/Accents */
+    /* This ensures the purple logo text fits in perfectly */
+    --secondary: 268 40% 38%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 63%;
-    --muted-foreground: 0 0% 9%;
+    /* Muted: Soft earthy gray-green for secondary text/backgrounds */
+    --muted: 92 20% 90%;
+    --muted-foreground: 92 20% 35%;
 
-    --accent: 166 76% 96%;
-    --accent-foreground: 173 80% 40%;
+    /* Accent: Very light green highlight for hovers */
+    --accent: 92 53% 90%;
+    --accent-foreground: 268 40% 38%;
 
+    /* Destructive: Soft Red */
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 0 0% 83%;
-    --input: 0 0% 83%;
-    --ring: 161 93% 30%;
+    /* Border: Light tan/beige */
+    --border: 45 20% 85%;
+    --input: 45 20% 85%;
+    --ring: 92 53% 51%; /* Focus ring is green */
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 0 0% 9%;
-
-    --sidebar-primary: 161 93% 30%;
-
-    --sidebar-primary-foreground: 151 80% 95%;
-
-    --sidebar-accent: 0 0% 32%;
-
-    --sidebar-accent-foreground: 0 0% 98%;
-
-    --sidebar-border: 0 0% 83%;
-
-    --sidebar-ring: 161 93% 30%;
-
+    /* Sidebar matches the main theme */
+    --sidebar-background: 45 30% 96%;
+    --sidebar-foreground: 120 20% 15%;
+    --sidebar-primary: 92 53% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 45 20% 90%;
+    --sidebar-accent-foreground: 268 40% 38%;
+    --sidebar-border: 45 20% 85%;
+    --sidebar-ring: 92 53% 51%;
+    
+    /* Chart colors - keeping existing or updating if needed, but user didn't specify. 
+       Keeping placeholders or removing if not used. 
+       Re-adding chart variables to avoid breaking if they are used. 
+       Using values from previous file but maybe adjusting slightly if needed? 
+       Actually user didn't provide chart colors, so I will keep the ones from previous file or just omit if not critical.
+       Wait, the user provided the FULL content for :root and .dark.
+       I should stick to what the user provided, but I notice the user's provided block didn't include chart variables.
+       If the app uses charts, this might break.
+       However, the user said "Update your CSS variables... The values below are derived directly..."
+       I will assume the user provided the complete block they want.
+       But I should be careful. The previous file had chart variables.
+       I will add the chart variables back just in case, or check if they are used.
+       Let's stick to the user's provided content for the theme colors.
+       I will add the chart variables back from the original file to be safe, as they are likely used by shadcn/ui components.
+    */
     --chart-1: 158 64% 51%;
-
     --chart-2: 141 69% 58%;
-
     --chart-3: 172 66% 50%;
-
     --chart-4: 82 77% 55%;
-
     --chart-5: 0 0% 45%;
-
-    --sidebar: 0 0% 98%;
-
-    --font-sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-
-    --font-serif: 'Lora', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
-
-    --font-mono: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-
+    --sidebar: 45 30% 96%; /* Matching sidebar-background */
+    
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-
     --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-
     --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
-
     --tracking-normal: 0em;
-
     --spacing: 0.25rem;
+    
+    --font-sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    --font-serif: 'Lora', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+    --font-mono: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   }
 
   .dark {
-    --background: 0 0% 9%;
-    --foreground: 0 0% 98%;
+    /* Dark Mode: Deep Forest Theme */
+    --background: 120 20% 8%;  /* Very dark green/black */
+    --foreground: 45 20% 90%;  /* Light beige text */
 
-    --card: 0 0% 14%;
-    --card-foreground: 0 0% 98%;
+    --card: 120 20% 10%;
+    --card-foreground: 45 20% 90%;
 
-    --popover: 0 0% 25%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 120 20% 10%;
+    --popover-foreground: 45 20% 90%;
 
-    --primary: 158 64% 51%;
-    --primary-foreground: 165 91% 9%;
+    --primary: 92 53% 51%;     /* Keep Logo Green */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 45%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 268 40% 48%;  /* Slightly lighter purple for dark mode */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 45%;
-    --muted-foreground: 0 0% 98%;
+    --muted: 120 20% 15%;
+    --muted-foreground: 92 10% 60%;
 
-    --accent: 178 84% 10%;
-    --accent-foreground: 172 66% 50%;
+    --accent: 120 20% 15%;
+    --accent-foreground: 45 20% 90%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 62% 30%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 0 0% 32%;
-    --input: 0 0% 32%;
-    --ring: 158 64% 51%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 158 64% 51%;
-    --sidebar-primary-foreground: 165 91% 9%;
-    --sidebar-accent: 172 66% 50%;
-    --sidebar-accent-foreground: 178 84% 10%;
-    --sidebar-border: 0 0% 32%;
-    --sidebar-ring: 158 64% 51%;
+    --border: 120 20% 20%;
+    --input: 120 20% 20%;
+    --ring: 92 53% 51%;
+    
+    --sidebar-background: 120 20% 8%;
+    --sidebar-foreground: 45 20% 90%;
+    --sidebar-primary: 92 53% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 120 20% 15%;
+    --sidebar-accent-foreground: 45 20% 90%;
+    --sidebar-border: 120 20% 20%;
+    --sidebar-ring: 92 53% 51%;
+    
     --chart-1: 156 71% 66%;
     --chart-2: 141 76% 73%;
     --chart-3: 170 76% 64%;
     --chart-4: 81 84% 67%;
     --chart-5: 0 0% 45%;
-    --sidebar: 0 0% 14%;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --sidebar: 120 20% 8%;
   }
 }
 
@@ -153,14 +154,13 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
   }
-
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-serif);
+    @apply text-secondary; /* This makes all headings Purple by default, matching the logo */
   }
 }
 

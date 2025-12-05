@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
-import { Droplets, Pill, Scissors, Heart, Flower2, Leaf } from 'lucide-react';
+import { Droplets, Pill, Heart, Sparkles, Utensils, Smile } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const categoryData = [
+  { name: 'Bamboo Salt', icon: Sparkles, description: 'Premium roasted bamboo salt' },
+  { name: 'Nutraceuticals', icon: Pill, description: 'Health supplements & capsules' },
+  { name: 'Healthy Food', icon: Utensils, description: 'Nutritious & natural foods' },
   { name: 'Skincare', icon: Droplets, description: 'Natural skincare solutions' },
-  { name: 'Supplements', icon: Pill, description: 'Herbal health supplements' },
-  { name: 'Hair Care', icon: Scissors, description: 'Natural hair treatments' },
+  { name: 'Personal Care', icon: Smile, description: 'Daily hygiene essentials' },
   { name: 'Wellness', icon: Heart, description: 'Holistic wellness products' },
-  { name: 'Essential Oils', icon: Flower2, description: 'Pure aromatherapy oils' },
-  { name: 'Detox', icon: Leaf, description: 'Cleansing & detox products' },
 ];
 
 export function Categories() {
@@ -16,7 +16,7 @@ export function Categories() {
     <section className="py-16 lg:py-24 bg-card">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#5E3A86] mb-3">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-secondary mb-3">
             Shop by Category
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto">
@@ -32,10 +32,10 @@ export function Categories() {
             >
               <Card className="group h-full hover:shadow-md transition-all duration-300 hover:border-primary/50 cursor-pointer">
                 <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center mx-auto mb-4 group-hover:bg-[#7EC242]/10 transition-colors">
-                    <category.icon className="h-6 w-6 text-[#7EC242]0." />
+                  <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/10 transition-colors">
+                    <category.icon className="h-6 w-6 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-1 group-hover:text-[#5E3A86] transition-colors">
+                  <h3 className="font-semibold text-foreground mb-1 group-hover:text-secondary transition-colors">
                     {category.name}
                   </h3>
                   <p className="text-xs text-muted-foreground hidden sm:block">

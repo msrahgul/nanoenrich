@@ -110,7 +110,7 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-[#5E3A86]">{isEditing ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+          <DialogTitle className="text-secondary">{isEditing ? 'Edit Product' : 'Add New Product'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -223,7 +223,7 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
 
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
-              <Switch className="data-[state=checked]:bg-[#7EC242]"
+              <Switch className="data-[state=checked]:bg-primary"
                 id="inStock"
                 checked={formData.inStock}
                 onCheckedChange={checked => setFormData(prev => ({ ...prev, inStock: checked }))}
@@ -232,7 +232,7 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Switch className="data-[state=checked]:bg-[#7EC242]"
+              <Switch className="data-[state=checked]:bg-primary"
                 id="featured"
                 checked={formData.featured}
                 onCheckedChange={checked => setFormData(prev => ({ ...prev, featured: checked }))}
@@ -245,7 +245,7 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-[#7EC242] hover:bg-[#7EC242]/90 text-white">
+            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white">
               {isEditing ? 'Update Product' : 'Add Product'}
             </Button>
           </div>

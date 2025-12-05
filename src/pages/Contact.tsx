@@ -94,7 +94,7 @@ const Contact = () => {
       <section className="bg-primary/5 py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="font-serif text-4xl md:text-5xl font-bold text-[#5E3A86] mb-4">
+            <h1 className="font-serif text-4xl md:text-5xl font-bold text-secondary mb-4">
               Get in Touch
             </h1>
             <p className="text-lg text-muted-foreground">
@@ -181,7 +181,7 @@ const Contact = () => {
 
                     <Button
                       type="submit"
-                      className="bg-[#7EC242] hover:bg-[#7EC242]/90 text-white"
+                      className="bg-primary hover:bg-primary/90 text-white"
                       size="lg"
                       disabled={isSubmitting}
                     >
@@ -205,8 +205,8 @@ const Contact = () => {
                 <Card key={info.title}>
                   <CardContent className="p-6">
                     <div className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#7EC242]/10 flex items-center justify-center shrink-0">
-                        <info.icon className="h-5 w-5 text-[#7EC242]" />
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <info.icon className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground mb-1">{info.title}</h3>

@@ -74,10 +74,10 @@ const ProductTable = ({ onEdit }: ProductTableProps) => {
                 </TableCell>
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>
-                  <Badge className="bg-[#5E3A86]/10 text-[#5E3A86] hover:bg-[#5E3A86]/20">{product.category}</Badge>
+                  <Badge className="bg-secondary/10 text-secondary hover:bg-secondary/20">{product.category}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <span className="font-semibold text-[#5E3A86]">₹{product.price}</span>
+                  <span className="font-semibold text-secondary">₹{product.price}</span>
                   {product.originalPrice && (
                     <span className="text-muted-foreground text-sm line-through ml-2">
                       ₹{product.originalPrice}
@@ -91,7 +91,7 @@ const ProductTable = ({ onEdit }: ProductTableProps) => {
                 </TableCell>
                 <TableCell className="text-center">
                   {product.featured && (
-                    <Star className="h-4 w-4 text-[#7EC242] fill-[#7EC242] mx-auto" />
+                    <Star className="h-4 w-4 text-primary fill-primary mx-auto" />
                   )}
                 </TableCell>
                 <TableCell className="text-right">
@@ -101,7 +101,7 @@ const ProductTable = ({ onEdit }: ProductTableProps) => {
                       size="icon"
                       onClick={() => onEdit(product)}
                     >
-                     <Edit className="h-4 w-4 text-[#7EC242]" />
+                      <Edit className="h-4 w-4 text-primary" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>

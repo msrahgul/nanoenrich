@@ -57,10 +57,10 @@ const Admin = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#5E3A86]">Admin Dashboard</h1>
+              <h1 className="text-2xl font-bold text-secondary">Admin Dashboard</h1>
               <p className="text-muted-foreground text-sm">Manage your products and categories</p>
             </div>
-            <Button onClick={handleAddProduct} className="bg-[#7EC242] hover:bg-[#7EC242]/90 text-white">
+            <Button onClick={handleAddProduct} className="bg-primary hover:bg-primary/90 text-white">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
@@ -83,10 +83,10 @@ const Admin = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">In Stock</CardTitle>
-              <Package className="h-4 w-4 text-[#7EC242]" />
+              <Package className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-[#7EC242]">{inStockProducts}</div>
+              <div className="text-2xl font-bold text-primary">{inStockProducts}</div>
             </CardContent>
           </Card>
           <Card>
@@ -152,7 +152,7 @@ const Admin = () => {
                     onChange={e => setNewCategory(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
                   />
-                  <Button onClick={handleAddCategory} className="bg-[#7EC242] hover:bg-[#7EC242]/90 text-white">Add Category</Button>
+                  <Button onClick={handleAddCategory} className="bg-primary hover:bg-primary/90 text-white">Add Category</Button>
                 </div>
 
                 <div className="flex flex-wrap gap-2">

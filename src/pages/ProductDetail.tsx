@@ -75,7 +75,7 @@ const ProductDetail = () => {
               />
             </div>
             {discount > 0 && (
-              <Badge className="absolute top-4 left-4 bg-[#7EC242] text-white text-sm">
+              <Badge className="absolute top-4 left-4 bg-primary text-white text-sm">
                 -{discount}% OFF
               </Badge>
             )}
@@ -87,12 +87,12 @@ const ProductDetail = () => {
               {product.category}
             </Badge>
 
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-[#5E3A86] mb-4">
+            <h1 className="font-serif text-3xl md:text-4xl font-bold text-secondary mb-4">
               {product.name}
             </h1>
 
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-3xl font-bold text-[#5E3A86]">₹{product.price}</span>
+              <span className="text-3xl font-bold text-secondary">₹{product.price}</span>
               {product.originalPrice && (
                 <>
                   <span className="text-xl text-muted-foreground line-through">
@@ -112,7 +112,7 @@ const ProductDetail = () => {
                 <ul className="space-y-2">
                   {product.benefits.map((benefit, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <Check className="h-4 w-4 text-[#7EC242] mt-0.5 shrink-0" />
+                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                       {benefit}
                     </li>
                   ))}
@@ -163,7 +163,7 @@ const ProductDetail = () => {
               </Button>
 
               <Button
-                className="flex-1 bg-[#7EC242] hover:bg-[#7EC242]/90 text-white"
+                className="flex-1 bg-primary hover:bg-primary/90 text-white"
                 onClick={handleBuyNow}
                 disabled={!product.inStock}
               >
@@ -178,7 +178,7 @@ const ProductDetail = () => {
             {/* Trust Badge */}
             <Card className="mt-6 bg-accent/30">
               <CardContent className="p-4 flex items-center gap-3">
-                <Leaf className="h-5 w-5 text-[#7EC242]" />
+                <Leaf className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-sm font-medium text-foreground">100% Natural & Organic</p>
                   <p className="text-xs text-muted-foreground">Free from harmful chemicals and additives</p>
