@@ -100,29 +100,10 @@ const Checkout = () => {
       // 3. Save to Firestore
       const orderId = await placeOrder(orderData); // This calls the function in ProductContext
 
-      // 4. Send Email Notification
-      // We don't await this to avoid blocking the UI if email service is slow
-      fetch('/.netlify/functions/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'order',
-          data: {
-            orderId,
-            customer: formData,
-            items: items.map(i => ({
-              quantity: i.quantity,
-              product: { name: i.product.name, price: i.product.price } // Minified data for email
-            })),
-            total
-          }
-        }),
-      }).catch(err => console.error("Email failed:", err));
-
-      // 5. Success!
+      // 4. Success!
       toast({
         title: "Order Placed Successfully!",
-        description: `Order #${orderId} saved. Confirmation email sent.`,
+        description: `Order #${orderId} has been saved. We will contact you shortly.`,
       });
 
       clearCart();

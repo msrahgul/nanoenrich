@@ -54,21 +54,25 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // Call Netlify Function
-      const response = await fetch('/.netlify/functions/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'contact',
-          data: formData
-        }),
-      });
+      // Format message for WhatsApp
+      const whatsappMessage = `*New Inquiry from Website*
+      
+*Name:* ${formData.name}
+*Email:* ${formData.email}
+*Subject:* ${formData.subject}
 
-      if (!response.ok) throw new Error('Failed to send message');
+*Message:*
+${formData.message}`;
+
+      const encodedMessage = encodeURIComponent(whatsappMessage);
+      const whatsappUrl = `https://wa.me/918870173412?text=${encodedMessage}`;
+
+      // Open WhatsApp in new tab
+      window.open(whatsappUrl, '_blank');
 
       toast({
-        title: "Message Sent!",
-        description: "We have received your message and will contact you shortly.",
+        title: "Opening WhatsApp...",
+        description: "Please send the pre-filled message to contact us.",
       });
 
       setFormData({ name: '', email: '', subject: '', message: '' });
@@ -76,7 +80,7 @@ const Contact = () => {
       console.error(error);
       toast({
         title: "Error",
-        description: "Could not send message. Please try again later.",
+        description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
     } finally {
