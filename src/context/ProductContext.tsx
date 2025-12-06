@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, Order } from '@/types';
+import { Product, Order, Subscriber } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/firebase'; 
-import { 
-  collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction 
+import { db } from '@/firebase';
+import {
+  collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, runTransaction, getDoc, setDoc
 } from 'firebase/firestore';
 
 interface ProductContextType {
@@ -22,6 +22,10 @@ interface ProductContextType {
   deleteCategory: (category: string) => Promise<void>;
   placeOrder: (orderData: Omit<Order, 'id' | 'date' | 'status'>) => Promise<string>;
   updateOrderStatus: (id: string, status: Order['status']) => Promise<void>;
+  subscribers: Subscriber[];
+  isNewsletterEnabled: boolean;
+  subscribeToNewsletter: (email: string) => Promise<void>;
+  toggleNewsletterFeature: (enabled: boolean) => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -37,12 +41,16 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>(['All']);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [isNewsletterEnabled, setIsNewsletterEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   // Firestore Collections
   const productsCol = collection(db, 'products');
   const categoriesCol = collection(db, 'categories');
   const ordersCol = collection(db, 'orders');
+  const subscribersCol = collection(db, 'subscribers');
+  const settingsDocRef = doc(db, 'settings', 'global');
 
   // --- 1. Fetch Data ---
   const fetchData = async () => {
@@ -61,6 +69,18 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       const q = query(ordersCol, orderBy('date', 'desc'));
       const ordSnap = await getDocs(q);
       setOrders(ordSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+
+      // Fetch Subscribers
+      const subSnap = await getDocs(query(subscribersCol, orderBy('date', 'desc')));
+      setSubscribers(subSnap.docs.map(d => ({ id: d.id, ...d.data() } as Subscriber)));
+
+      // Fetch Settings
+      const settingsSnap = await getDoc(settingsDocRef);
+      if (settingsSnap.exists()) {
+        setIsNewsletterEnabled(settingsSnap.data().newsletterEnabled ?? true);
+      } else {
+        await setDoc(settingsDocRef, { newsletterEnabled: true });
+      }
 
     } catch (error) {
       console.error("Firebase Error:", error);
@@ -108,7 +128,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const deleteCategory = async (category: string) => {
     if (category === 'All') return;
     try {
-      const q = query(categoriesCol); 
+      const q = query(categoriesCol);
       const snapshot = await getDocs(q);
       const docToDelete = snapshot.docs.find(d => d.data().name === category);
       if (docToDelete) {
@@ -158,13 +178,13 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       });
 
       // Update Local State
-      const newOrder = { 
-        ...data, 
-        id: newOrderId, 
-        date: orderDate, 
-        status: status 
+      const newOrder = {
+        ...data,
+        id: newOrderId,
+        date: orderDate,
+        status: status
       } as Order;
-      
+
       setOrders(prev => [newOrder, ...prev]);
       return newOrderId;
 
@@ -184,6 +204,35 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // --- 5. Newsletter Actions ---
+  const subscribeToNewsletter = async (email: string) => {
+    if (subscribers.some(s => s.email === email)) {
+      toast({ title: "Already Subscribed", description: "This email is already on our list." });
+      return;
+    }
+
+    try {
+      const newSub = { email, date: new Date().toISOString() };
+      const docRef = await addDoc(subscribersCol, newSub);
+      setSubscribers(prev => [{ ...newSub, id: docRef.id } as Subscriber, ...prev]);
+      toast({ title: "Subscribed!", description: "Thank you for joining our newsletter." });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to subscribe.", variant: "destructive" });
+    }
+  };
+
+  const toggleNewsletterFeature = async (enabled: boolean) => {
+    try {
+      await updateDoc(settingsDocRef, { newsletterEnabled: enabled });
+      setIsNewsletterEnabled(enabled);
+      toast({ title: "Settings Updated", description: `Newsletter popup is now ${enabled ? 'Enabled' : 'Disabled'}.` });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to update settings.", variant: "destructive" });
+    }
+  };
+
   // --- Helpers ---
   const getProductById = (id: string) => products.find(p => p.id === id);
   const getProductsByCategory = (cat: string) => cat === 'All' ? products : products.filter(p => p.category === cat);
@@ -195,7 +244,8 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       products, categories, orders, isLoading,
       addProduct, updateProduct, deleteProduct,
       getProductById, getProductsByCategory, searchProducts, getFeaturedProducts,
-      addCategory, deleteCategory, placeOrder, updateOrderStatus
+      addCategory, deleteCategory, placeOrder, updateOrderStatus,
+      subscribers, isNewsletterEnabled, subscribeToNewsletter, toggleNewsletterFeature
     }}>
       {children}
     </ProductContext.Provider>

@@ -8,7 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import ProductTable from '@/components/admin/ProductTable';
 import ProductForm from '@/components/admin/ProductForm';
-import { Plus, Package, Tag, LayoutDashboard, X, TrendingUp, DollarSign, Activity, ShoppingBag } from 'lucide-react';
+import { Plus, Package, Tag, LayoutDashboard, X, TrendingUp, DollarSign, Activity, ShoppingBag, Mail, Users } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Layout } from '@/components/layout/Layout';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -25,7 +27,10 @@ import {
 import { Navbar } from '@/components/layout/Navbar';
 
 const Admin = () => {
-  const { products, categories, addCategory, deleteCategory, orders, updateOrderStatus } = useProducts();
+  const {
+    products, categories, addCategory, deleteCategory, orders, updateOrderStatus,
+    subscribers, isNewsletterEnabled, toggleNewsletterFeature
+  } = useProducts();
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
@@ -116,6 +121,10 @@ const Admin = () => {
             <TabsTrigger value="products" className="data-[state=active]:bg-secondary data-[state=active]:text-white">
               <Package className="h-4 w-4 mr-2" />
               Products & Categories
+            </TabsTrigger>
+            <TabsTrigger value="newsletter" className="data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <Mail className="h-4 w-4 mr-2" />
+              Newsletter
             </TabsTrigger>
           </TabsList>
 
@@ -474,6 +483,73 @@ const Admin = () => {
                 <ProductTable onEdit={handleEditProduct} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* --- NEWSLETTER TAB --- */}
+          <TabsContent value="newsletter">
+            <div className="grid gap-4">
+              {/* Settings Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-primary" />
+                    Popup Settings
+                  </CardTitle>
+                  <CardDescription>Control the visibility of the newsletter popup on your website.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Enable Newsletter Popup</Label>
+                    <p className="text-sm text-muted-foreground">
+                      When enabled, new visitors will see a popup asking for their email.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isNewsletterEnabled}
+                    onCheckedChange={toggleNewsletterFeature}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Subscribers List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Subscribers ({subscribers.length})
+                  </CardTitle>
+                  <CardDescription>List of customers who have subscribed to your newsletter.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="text-right">Date Subscribed</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subscribers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                            No subscribers yet.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        subscribers.map((sub) => (
+                          <TableRow key={sub.id}>
+                            <TableCell className="font-medium">{sub.email}</TableCell>
+                            <TableCell className="text-right">
+                              {new Date(sub.date).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 

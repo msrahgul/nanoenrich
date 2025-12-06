@@ -37,3 +37,9 @@ export interface Order {
   date: string;
   status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
 }
+
+export interface Subscriber {
+  id: string;
+  email: string;
+  date: string;
+}
