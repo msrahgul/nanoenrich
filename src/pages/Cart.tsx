@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/context/CartContext';
 
 const Cart = () => {
-  const { items, updateQuantity, removeFromCart, subtotal, tax, total } = useCart();
+  const { items, updateQuantity, removeFromCart, subtotal, total } = useCart();
 
   if (items.length === 0) {
     return (
@@ -39,7 +39,7 @@ const Cart = () => {
         <h1 className="font-serif text-3xl font-bold text-secondary mb-8">Shopping Cart</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
+          {/* Cart Items List */}
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => (
               <Card key={item.product.id}>
@@ -82,7 +82,7 @@ const Cart = () => {
 
                         <div className="flex items-center gap-4">
                           <span className="font-semibold text-foreground">
-                            ₹{item.product.price * item.quantity}
+                            ₹{(item.product.price * item.quantity).toFixed(2)}
                           </span>
                           <Button
                             variant="ghost"
@@ -107,30 +107,35 @@ const Cart = () => {
             </Link>
           </div>
 
-          {/* Order Summary */}
+          {/* Order Summary with Product Breakdown */}
           <div className="lg:col-span-1">
             <Card className="sticky top-24">
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="text-foreground">₹{subtotal.toFixed(2)}</span>
+                {/* Product Breakdown List */}
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <div key={item.product.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground line-clamp-1 pr-4">
+                        {item.product.name} <span className="text-xs font-medium text-foreground/70">x{item.quantity}</span>
+                      </span>
+                      <span className="text-foreground font-medium whitespace-nowrap">
+                        ₹{(item.product.price * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">GST (18%)</span>
-                  <span className="text-foreground">₹{tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-primary font-medium">Free</span>
-                </div>
+
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
                   <span>₹{total.toFixed(2)}</span>
                 </div>
+                <Separator />
+                
+
               </CardContent>
               <CardFooter>
                 <Link to="/checkout" className="w-full">

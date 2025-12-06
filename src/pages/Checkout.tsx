@@ -5,35 +5,55 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/context/CartContext';
+import { useProducts } from '@/context/ProductContext';
 import { toast } from '@/hooks/use-toast';
 import { Lock, CreditCard, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 
+// --- Data Lists ---
+
+const indianStates = [
+  "ANDAMAN & NICOBAR ISLANDS", "ANDHRA PRADESH", "ARUNACHAL PRADESH", "ASSAM", "BIHAR", "CHANDIGARH", "CHHATTISGARH", "DADRA AND NAGAR HAVELI AND DAMAN AND DIU", "DELHI", "GOA", "GUJARAT", "HARYANA", "HIMACHAL PRADESH", "JAMMU & KASHMIR", "JHARKHAND", "KARNATAKA", "KERALA", "LADAKH", "LAKSHADWEEP", "MADHYA PRADESH", "MAHARASHTRA", "MANIPUR", "MEGHALAYA", "MIZORAM", "NAGALAND", "ODISHA", "PUDUCHERRY", "PUNJAB", "RAJASTHAN", "SIKKIM", "TAMIL NADU", "TELANGANA", "TRIPURA", "UTTAR PRADESH", "UTTARAKHAND", "WEST BENGAL"
+];
+
 const customerSchema = z.object({
   fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
   mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
-  email: z.string().trim().email('Enter a valid email').optional().or(z.literal('')),
-  address: z.string().trim().min(10, 'Address must be at least 10 characters').max(500, 'Address is too long'),
-  city: z.string().trim().min(2, 'City is required').max(100, 'City name is too long'),
+  email: z.string().trim().email('Enter a valid email').optional().or(z.literal('')), // Added Email Schema
   pincode: z.string().trim().regex(/^\d{6}$/, 'Enter a valid 6-digit pincode'),
+  flat: z.string().trim().min(1, 'Flat/House no. is required'),
+  area: z.string().trim().min(1, 'Area/Street is required'),
+  landmark: z.string().optional(),
+  city: z.string().trim().min(2, 'Town/City is required'),
+  state: z.string().min(1, 'State is required'),
 });
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { items, subtotal, tax, total, clearCart } = useCart();
+  const { items, subtotal, total, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     fullName: '',
     mobile: '',
-    email: '',
-    address: '',
-    city: '',
+    email: '', // Added email to state
     pincode: '',
+    flat: '',
+    area: '',
+    landmark: '',
+    city: '',
+    state: '',
   });
 
   if (items.length === 0) {
@@ -44,17 +64,26 @@ const Checkout = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const { placeOrder } = useProducts(); // Get placeOrder function
+
+  // ... state definitions ...
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    // Validate form
     const result = customerSchema.safeParse(formData);
 
     if (!result.success) {
@@ -70,18 +99,33 @@ const Checkout = () => {
 
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Create Order Object
+      const orderData = {
+        customer: formData,
+        items: items,
+        total: total,
+      };
 
-    // In production, this would redirect to Stripe/Razorpay
-    toast({
-      title: "Order Placed Successfully!",
-      description: "You will be redirected to the payment gateway. (Demo - order saved)",
-    });
+      // Save to Backend
+      await placeOrder(orderData);
 
-    clearCart();
-    setIsProcessing(false);
-    navigate('/');
+      toast({
+        title: "Order Placed Successfully!",
+        description: "Your order has been stored in the system.",
+      });
+
+      clearCart();
+      navigate('/'); // Redirect to Home or a Thank You page
+    } catch (error) {
+      toast({
+        title: "Order Failed",
+        description: "There was a problem saving your order.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -106,99 +150,133 @@ const Checkout = () => {
                   <CardTitle>Delivery Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name *</Label>
-                      <Input
-                        id="fullName"
-                        name="fullName"
-                        placeholder="Enter your full name"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        className={errors.fullName ? 'border-destructive' : ''}
-                      />
-                      {errors.fullName && (
-                        <p className="text-xs text-destructive">{errors.fullName}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="mobile">Mobile Number *</Label>
-                      <Input
-                        id="mobile"
-                        name="mobile"
-                        placeholder="10-digit mobile number"
-                        value={formData.mobile}
-                        onChange={handleChange}
-                        className={errors.mobile ? 'border-destructive' : ''}
-                      />
-                      {errors.mobile && (
-                        <p className="text-xs text-destructive">{errors.mobile}</p>
-                      )}
-                    </div>
+
+                  {/* Full Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full name *</Label>
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      className={errors.fullName ? 'border-destructive' : ''}
+                    />
+                    {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
                   </div>
 
+                  {/* Mobile Number */}
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email (Optional)</Label>
+                    <Label htmlFor="mobile">Mobile number *</Label>
+                    <Input
+                      id="mobile"
+                      name="mobile"
+                      value={formData.mobile}
+                      onChange={handleChange}
+                      className={errors.mobile ? 'border-destructive' : ''}
+                    />
+                    <p className="text-xs text-muted-foreground">May be used to assist delivery</p>
+                    {errors.mobile && <p className="text-xs text-destructive">{errors.mobile}</p>}
+                  </div>
+
+                  {/* Email Address (Optional) - Added Here */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="your@email.com"
                       value={formData.email}
                       onChange={handleChange}
                       className={errors.email ? 'border-destructive' : ''}
                     />
-                    {errors.email && (
-                      <p className="text-xs text-destructive">{errors.email}</p>
-                    )}
+                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                   </div>
 
+                  {/* Pincode */}
                   <div className="space-y-2">
-                    <Label htmlFor="address">Delivery Address *</Label>
-                    <Textarea
-                      id="address"
-                      name="address"
-                      placeholder="Enter your complete address"
-                      rows={3}
-                      value={formData.address}
+                    <Label htmlFor="pincode">Pincode *</Label>
+                    <Input
+                      id="pincode"
+                      name="pincode"
+                      placeholder="6 digits [0-9] PIN code"
+                      value={formData.pincode}
                       onChange={handleChange}
-                      className={errors.address ? 'border-destructive' : ''}
+                      className={errors.pincode ? 'border-destructive' : ''}
                     />
-                    {errors.address && (
-                      <p className="text-xs text-destructive">{errors.address}</p>
-                    )}
+                    {errors.pincode && <p className="text-xs text-destructive">{errors.pincode}</p>}
                   </div>
 
+                  {/* Flat/House/Building */}
+                  <div className="space-y-2">
+                    <Label htmlFor="flat">Flat, House no., Building, Company, Apartment *</Label>
+                    <Input
+                      id="flat"
+                      name="flat"
+                      value={formData.flat}
+                      onChange={handleChange}
+                      className={errors.flat ? 'border-destructive' : ''}
+                    />
+                    {errors.flat && <p className="text-xs text-destructive">{errors.flat}</p>}
+                  </div>
+
+                  {/* Area/Street */}
+                  <div className="space-y-2">
+                    <Label htmlFor="area">Area, Street, Sector, Village *</Label>
+                    <Input
+                      id="area"
+                      name="area"
+                      value={formData.area}
+                      onChange={handleChange}
+                      className={errors.area ? 'border-destructive' : ''}
+                    />
+                    {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
+                  </div>
+
+                  {/* Landmark */}
+                  <div className="space-y-2">
+                    <Label htmlFor="landmark">Landmark</Label>
+                    <Input
+                      id="landmark"
+                      name="landmark"
+                      placeholder="E.g. near Apollo Hospital"
+                      value={formData.landmark}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  {/* Town/City & State */}
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="city">City *</Label>
+                      <Label htmlFor="city">Town/City *</Label>
                       <Input
                         id="city"
                         name="city"
-                        placeholder="Enter city"
                         value={formData.city}
                         onChange={handleChange}
                         className={errors.city ? 'border-destructive' : ''}
                       />
-                      {errors.city && (
-                        <p className="text-xs text-destructive">{errors.city}</p>
-                      )}
+                      {errors.city && <p className="text-xs text-destructive">{errors.city}</p>}
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="pincode">Pincode *</Label>
-                      <Input
-                        id="pincode"
-                        name="pincode"
-                        placeholder="6-digit pincode"
-                        value={formData.pincode}
-                        onChange={handleChange}
-                        className={errors.pincode ? 'border-destructive' : ''}
-                      />
-                      {errors.pincode && (
-                        <p className="text-xs text-destructive">{errors.pincode}</p>
-                      )}
+                      <Label htmlFor="state">State *</Label>
+                      <Select
+                        onValueChange={(value) => handleSelectChange('state', value)}
+                        value={formData.state}
+                      >
+                        <SelectTrigger className={errors.state ? 'border-destructive' : ''}>
+                          <SelectValue placeholder="Choose a state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {indianStates.map((st) => (
+                            <SelectItem key={st} value={st}>{st}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.state && <p className="text-xs text-destructive">{errors.state}</p>}
                     </div>
                   </div>
+
                 </CardContent>
                 <CardFooter>
                   <Button
@@ -258,10 +336,6 @@ const Checkout = () => {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>₹{subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">GST (18%)</span>
-                    <span>₹{tax.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Shipping</span>

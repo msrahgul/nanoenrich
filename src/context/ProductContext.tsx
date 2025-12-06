@@ -1,19 +1,23 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product } from '@/types';
-import { products as initialProducts, categories as initialCategories } from '@/data/products';
+import { Product, Order } from '@/types'; // Import Order type
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductContextType {
   products: Product[];
   categories: string[];
-  addProduct: (product: Omit<Product, 'id'>) => void;
-  updateProduct: (id: string, product: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  orders: Order[]; // Add orders to state
+  isLoading: boolean;
+  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+  updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
   getProductById: (id: string) => Product | undefined;
   getProductsByCategory: (category: string) => Product[];
   searchProducts: (query: string) => Product[];
   getFeaturedProducts: () => Product[];
-  addCategory: (category: string) => void;
-  deleteCategory: (category: string) => void;
+  addCategory: (category: string) => Promise<void>;
+  deleteCategory: (category: string) => Promise<void>;
+  placeOrder: (orderData: Omit<Order, 'id' | 'date' | 'status'>) => Promise<void>; // Add placeOrder
+  updateOrderStatus: (id: string, status: Order['status']) => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -26,88 +30,146 @@ export const useProducts = () => {
   return context;
 };
 
+const API_URL = 'http://localhost:5000/api';
+
 export const ProductProvider = ({ children }: { children: ReactNode }) => {
-  const [products, setProducts] = useState<Product[]>(() => {
-    const stored = localStorage.getItem('nanoenrich_products');
-    return stored ? JSON.parse(stored) : initialProducts;
-  });
+  const { toast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [orders, setOrders] = useState<Order[]>([]); // Orders state
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [categories, setCategories] = useState<string[]>(() => {
-    const stored = localStorage.getItem('nanoenrich_categories');
-    return stored ? JSON.parse(stored) : initialCategories;
-  });
+  // Fetch Data
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [prodRes, catRes, orderRes] = await Promise.all([
+        fetch(`${API_URL}/products`),
+        fetch(`${API_URL}/categories`),
+        fetch(`${API_URL}/orders`) // Fetch orders
+      ]);
+
+      if (prodRes.ok) setProducts(await prodRes.json());
+      if (catRes.ok) setCategories(await catRes.json());
+      if (orderRes.ok) setOrders(await orderRes.json());
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Connection Error",
+        description: "Could not connect to the backend.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    localStorage.setItem('nanoenrich_products', JSON.stringify(products));
-  }, [products]);
+    fetchData();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('nanoenrich_categories', JSON.stringify(categories));
-  }, [categories]);
+  // ... Existing Product & Category functions (addProduct, updateProduct, etc.) ...
 
-  const addProduct = (product: Omit<Product, 'id'>) => {
-    const newProduct: Product = {
-      ...product,
-      id: Date.now().toString(),
-    };
-    setProducts(prev => [...prev, newProduct]);
+  const addProduct = async (productData: Omit<Product, 'id'>) => {
+    const res = await fetch(`${API_URL}/products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(productData)
+    });
+    if (res.ok) {
+      const newP = await res.json();
+      setProducts(prev => [newP, ...prev]);
+    }
   };
 
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts(prev =>
-      prev.map(p => (p.id === id ? { ...p, ...updates } : p))
-    );
+  const updateProduct = async (id: string, product: Partial<Product>) => {
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product)
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setProducts(prev => prev.map(p => p.id === id ? updated : p));
+    }
   };
 
-  const deleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
+  const deleteProduct = async (id: string) => {
+    const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+    if (res.ok) setProducts(prev => prev.filter(p => p.id !== id));
   };
 
+  const addCategory = async (cat: string) => {
+    const res = await fetch(`${API_URL}/categories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: cat })
+    });
+    if (res.ok) {
+      setCategories(prev => [...prev, cat]);
+    }
+  };
+
+  const deleteCategory = async (cat: string) => {
+    if (cat === 'All') return;
+    const res = await fetch(`${API_URL}/categories/${encodeURIComponent(cat)}`, { method: 'DELETE' });
+    if (res.ok) setCategories(prev => prev.filter(c => c !== cat));
+  };
+
+
+  // --- NEW: Order Actions ---
+
+  const placeOrder = async (orderData: Omit<Order, 'id' | 'date' | 'status'>) => {
+    try {
+      const response = await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) throw new Error('Failed to place order');
+
+      const newOrder = await response.json();
+      setOrders(prev => [newOrder, ...prev]);
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
+  const updateOrderStatus = async (id: string, status: Order['status']) => {
+    try {
+      const response = await fetch(`${API_URL}/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update order');
+
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+      toast({ title: "Status Updated", description: `Order marked as ${status}` });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+    }
+  };
+
+  // Helper functions
   const getProductById = (id: string) => products.find(p => p.id === id);
-
-  const getProductsByCategory = (category: string) => {
-    if (category === 'All') return products;
-    return products.filter(p => p.category === category);
-  };
-
-  const searchProducts = (query: string) => {
-    const lowercaseQuery = query.toLowerCase();
-    return products.filter(
-      p =>
-        p.name.toLowerCase().includes(lowercaseQuery) ||
-        p.description.toLowerCase().includes(lowercaseQuery) ||
-        p.category.toLowerCase().includes(lowercaseQuery)
-    );
-  };
-
+  const getProductsByCategory = (cat: string) => cat === 'All' ? products : products.filter(p => p.category === cat);
+  const searchProducts = (q: string) => products.filter(p => p.name.toLowerCase().includes(q.toLowerCase()));
   const getFeaturedProducts = () => products.filter(p => p.featured);
-
-  const addCategory = (category: string) => {
-    if (!categories.includes(category)) {
-      setCategories(prev => [...prev, category]);
-    }
-  };
-
-  const deleteCategory = (category: string) => {
-    if (category !== 'All') {
-      setCategories(prev => prev.filter(c => c !== category));
-    }
-  };
 
   return (
     <ProductContext.Provider
       value={{
-        products,
-        categories,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        getProductById,
-        getProductsByCategory,
-        searchProducts,
-        getFeaturedProducts,
-        addCategory,
-        deleteCategory,
+        products, categories, orders, isLoading,
+        addProduct, updateProduct, deleteProduct,
+        getProductById, getProductsByCategory, searchProducts, getFeaturedProducts,
+        addCategory, deleteCategory,
+        placeOrder, updateOrderStatus
       }}
     >
       {children}

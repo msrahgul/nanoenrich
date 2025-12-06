@@ -16,11 +16,6 @@ const features = [
     title: 'Quality Certified',
     description: 'Rigorously tested and certified to meet the highest standards of safety and efficacy.',
   },
-  {
-    icon: Truck,
-    title: 'Fast Delivery',
-    description: 'Free shipping on orders above ₹999 with quick and reliable delivery across India.',
-  },
 ];
 
 export function WhyChooseUs() {
@@ -36,7 +31,7 @@ export function WhyChooseUs() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature) => (
             <div key={feature.title} className="text-center">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">

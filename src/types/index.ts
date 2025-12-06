@@ -18,20 +18,22 @@ export interface CartItem {
   quantity: number;
 }
 
-export interface CustomerInfo {
-  fullName: string;
-  mobile: string;
-  email?: string;
-  address: string;
-  city: string;
-  pincode: string;
-}
-
+// New Order Interface
 export interface Order {
   id: string;
+  customer: {
+    fullName: string;
+    mobile: string;
+    email: string;
+    pincode: string;
+    flat: string;
+    area: string;
+    landmark: string;
+    city: string;
+    state: string;
+  };
   items: CartItem[];
-  customer: CustomerInfo;
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered';
-  createdAt: Date;
+  date: string;
+  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
 }

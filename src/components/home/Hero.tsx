@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import heroBg from '@/assets/hero-bg.jpg';
 
 export function Hero() {
@@ -44,21 +44,7 @@ export function Hero() {
             </Link>
           </div>
 
-          {/* Trust Badges */}
-          <div className="flex flex-wrap gap-6 mt-12 pt-8 border-t border-border/50">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-secondary">100%</p>
-              <p className="text-xs text-muted-foreground">Natural</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-secondary">50K+</p>
-              <p className="text-xs text-muted-foreground">Happy Customers</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-secondary">4.9★</p>
-              <p className="text-xs text-muted-foreground">Rating</p>
-            </div>
-          </div>
+
         </div>
       </div>
     </section>

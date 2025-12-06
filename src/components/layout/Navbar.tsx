@@ -1,7 +1,8 @@
-import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Search, Leaf } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Menu, X, Search, LogOut, User, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext'; // Import Auth Hook
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -15,7 +16,14 @@ const navLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { totalItems } = useCart();
+  const { isAuthenticated, logout } = useAuth(); // Get auth state
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -46,6 +54,17 @@ export function Navbar() {
                 {link.name}
               </Link>
             ))}
+
+            {/* Admin Link (Only visible if logged in) */}
+            {isAuthenticated && (
+              <Link
+                to="/admin"
+                className="text-sm font-medium text-secondary flex items-center gap-1"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Admin
+              </Link>
+            )}
           </div>
 
           {/* Right Side Actions */}
@@ -66,6 +85,19 @@ export function Navbar() {
                 )}
               </Button>
             </Link>
+
+            {/* Unique Logout Button Logic */}
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                title="Logout"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            )}
 
             {/* Mobile Menu Button */}
             <Button
@@ -98,6 +130,28 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
+              {isAuthenticated && (
+                <>
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="text-sm font-medium text-secondary py-2"
+                  >
+                    Admin Dashboard
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    className="justify-start px-0 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}

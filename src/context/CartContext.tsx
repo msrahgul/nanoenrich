@@ -10,14 +10,12 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
-  tax: number;
   total: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = 'ecommerce-cart';
-const TAX_RATE = 0.18; // 18% GST
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -88,8 +86,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const tax = subtotal * TAX_RATE;
-  const total = subtotal + tax;
+  const total = subtotal; // Total is now just the subtotal
 
   return (
     <CartContext.Provider
@@ -101,7 +98,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         totalItems,
         subtotal,
-        tax,
         total,
       }}
     >
