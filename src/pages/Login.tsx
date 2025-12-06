@@ -16,25 +16,16 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const success = login(username, password);
-    
-    if (success) {
-      toast({
-        title: "Login Successful",
-        description: "Welcome back, Admin!",
-      });
-      navigate('/admin');
-    } else {
-      toast({
-        title: "Login Failed",
-        description: "Invalid username or password.",
-        variant: "destructive"
-      });
-    }
-  };
+  const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    await login(username, password);
+    toast({ title: "Login Successful" });
+    navigate('/admin');
+  } catch (error) {
+    toast({ title: "Login Failed", description: "Invalid email or password", variant: "destructive" });
+  }
+};
 
   return (
     <Layout>
