@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Product } from '@/types';
+import React, { useState, useEffect } from 'react';
+import { Product, PaymentSettings } from '@/types';
 import { useProducts } from '@/context/ProductContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import ProductTable from '@/components/admin/ProductTable';
 import ProductForm from '@/components/admin/ProductForm';
-import { Plus, Package, Tag, LayoutDashboard, X, TrendingUp, DollarSign, Activity, ShoppingBag, Mail, Users } from 'lucide-react';
+import ImageUploadField from '@/components/admin/ImageUploadField';
+import { Plus, Package, Tag, LayoutDashboard, X, TrendingUp, DollarSign, Activity, ShoppingBag, Mail, Users, Settings, Smartphone } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Layout } from '@/components/layout/Layout';
@@ -25,6 +26,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from '@/components/ui/dialog';
 import { Navbar } from '@/components/layout/Navbar';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
+import { toast } from '@/components/ui/use-toast';
+
+// --- CONSTANTS ---
+const PAYMENT_SETTINGS_DOC = 'payment_config';
 
 const Admin = () => {
   const {
@@ -35,7 +42,49 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
   const [newCategory, setNewCategory] = useState('');
 
+  // Payment Settings State
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
+    upiId: '',
+    payeeName: '',
+    qrImageUrl: ''
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // --- Initial Load for Settings ---
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, 'settings', PAYMENT_SETTINGS_DOC);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setPaymentSettings(docSnap.data() as PaymentSettings);
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   // --- Handlers ---
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      await setDoc(doc(db, 'settings', PAYMENT_SETTINGS_DOC), paymentSettings);
+      toast({ title: "Settings Saved", description: "Payment configuration updated successfully." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleWhatsAppUpdate = (order: any) => {
+    const message = `Hello ${order.customer.fullName}, update regarding your order #${order.id}. Current Status: ${order.status}.`;
+    const url = `https://wa.me/91${order.customer.mobile}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   const handleAddProduct = () => {
     setEditingProduct(undefined);
     setIsFormOpen(true);
@@ -129,6 +178,10 @@ const Admin = () => {
             <TabsTrigger value="newsletter" className="data-[state=active]:bg-secondary data-[state=active]:text-white">
               <Mail className="h-4 w-4 mr-2" />
               Newsletter
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-secondary data-[state=active]:text-white">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -321,6 +374,7 @@ const Admin = () => {
                       <TableHead>Date</TableHead>
                       <TableHead>Customer</TableHead>
                       <TableHead>Total</TableHead>
+                      <TableHead>UTR / Txn ID</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -328,22 +382,23 @@ const Admin = () => {
                   <TableBody>
                     {orders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                           No orders found.
                         </TableCell>
                       </TableRow>
                     ) : (
                       orders.map((order) => (
                         <TableRow key={order.id} className={order.status === 'Cancelled' ? 'opacity-50 line-through decoration-slate-500' : ''}>
-                          <TableCell className="font-medium">#{order.id}</TableCell>
+                          <TableCell className="font-medium">#{order.id.slice(0, 6)}</TableCell>
                           <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
                           <TableCell>
                             <div className="flex flex-col">
                               <span className="font-medium">{order.customer.fullName}</span>
-                              <span className="text-xs text-muted-foreground">{order.customer.city}</span>
+                              <span className="text-xs text-muted-foreground">{order.customer.mobile}</span>
                             </div>
                           </TableCell>
                           <TableCell>₹{order.total.toFixed(2)}</TableCell>
+                          <TableCell className="font-mono text-xs">{order.transactionId || '-'}</TableCell>
                           <TableCell>
                             <div onClick={(e) => e.stopPropagation()}>
                               <Select
@@ -363,7 +418,17 @@ const Admin = () => {
                               </Select>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="text-green-600 border-green-200 hover:bg-green-50"
+                              onClick={() => handleWhatsAppUpdate(order)}
+                              title="Send WhatsApp Update"
+                            >
+                              <Smartphone className="h-4 w-4" />
+                            </Button>
+
                             <Dialog>
                               <DialogTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -375,19 +440,20 @@ const Admin = () => {
                                   <DialogTitle>Order Details #{order.id}</DialogTitle>
                                 </DialogHeader>
                                 <div className="grid gap-6 py-4 text-left">
-                                  {/* Customer Details */}
-                                  <div className="grid grid-cols-2 gap-4 border p-4 rounded-md bg-muted/20">
+                                  {/* Shipping and Payment info */}
+                                  <div className="grid grid-cols-2 gap-4 border p-4 rounded-md bg-muted/20 text-sm">
                                     <div>
-                                      <h4 className="font-semibold text-sm mb-2">Shipping To:</h4>
-                                      <p className="text-sm">{order.customer.fullName}</p>
-                                      <p className="text-sm">{order.customer.flat}, {order.customer.area}</p>
-                                      <p className="text-sm">{order.customer.landmark}</p>
-                                      <p className="text-sm">{order.customer.city}, {order.customer.state} - {order.customer.pincode}</p>
+                                      <h4 className="font-bold mb-2">Shipping To:</h4>
+                                      <p>{order.customer.fullName}</p>
+                                      <p>{order.customer.flat}, {order.customer.area}</p>
+                                      <p>{order.customer.city} - {order.customer.pincode}</p>
+                                      <p className="mt-2 text-xs text-muted-foreground">Mobile: {order.customer.mobile}</p>
                                     </div>
                                     <div>
-                                      <h4 className="font-semibold text-sm mb-2">Contact:</h4>
-                                      <p className="text-sm">Mobile: {order.customer.mobile}</p>
-                                      <p className="text-sm">Email: {order.customer.email || 'N/A'}</p>
+                                      <h4 className="font-bold mb-2">Payment Info:</h4>
+                                      <p>Total: ₹{order.total}</p>
+                                      <p>Txn ID / UTR: <span className="font-mono">{order.transactionId || 'N/A'}</span></p>
+                                      <p className="mt-2 text-xs text-muted-foreground">Status: {order.status}</p>
                                     </div>
                                   </div>
 
@@ -396,10 +462,9 @@ const Admin = () => {
                                     <h4 className="font-semibold text-sm mb-3">Items Purchased:</h4>
                                     <div className="space-y-3">
                                       {order.items.map((item, index) => (
-                                        <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
+                                        <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0 border-slate-100">
                                           <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-muted rounded overflow-hidden">
-                                              {/* Fallback image logic if needed */}
                                               <img src={item.product.image} alt="" className="w-full h-full object-cover" />
                                             </div>
                                             <div>
@@ -554,6 +619,50 @@ const Admin = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* --- SETTINGS TAB --- */}
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Configuration</CardTitle>
+                <CardDescription>Setup your UPI details for customer payments.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 max-w-xl">
+                <div className="space-y-2">
+                  <Label>UPI ID (VPA)</Label>
+                  <Input
+                    placeholder="e.g. business@oksbi"
+                    value={paymentSettings.upiId}
+                    onChange={(e) => setPaymentSettings(prev => ({ ...prev, upiId: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Payee Name</Label>
+                  <Input
+                    placeholder="e.g. Nano Enrich Store"
+                    value={paymentSettings.payeeName}
+                    onChange={(e) => setPaymentSettings(prev => ({ ...prev, payeeName: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>QR Code Image</Label>
+                  <div className="border rounded-md p-4">
+                    <ImageUploadField
+                      value={paymentSettings.qrImageUrl}
+                      onChange={(url) => setPaymentSettings(prev => ({ ...prev, qrImageUrl: url }))}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Upload a clear image of your UPI QR Code.</p>
+                </div>
+
+                <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="w-full">
+                  {isSavingSettings ? 'Saving...' : 'Save Configuration'}
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

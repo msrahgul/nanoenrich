@@ -10,23 +10,25 @@ import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/context/ProductContext';
 import { toast } from '@/hooks/use-toast';
-import { Lock, CreditCard, ArrowLeft } from 'lucide-react';
+import { Lock, CreditCard, ArrowLeft, ScanLine, Smartphone } from 'lucide-react';
 import { z } from 'zod';
 import emailjs from '@emailjs/browser';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
+import { PaymentSettings } from '@/types';
 
 // --- CONFIG ---
 const EMAILJS_SERVICE_ID = "service_yc01lbo";
 const EMAILJS_TEMPLATE_CUSTOMER = "template_90zv68f";
 const EMAILJS_TEMPLATE_ADMIN = "template_j10mkvs";
 const EMAILJS_PUBLIC_KEY = "3Vt2AYOx00XjFyM0I";
-
 const LOGO_URL = "https://res.cloudinary.com/ddjzmk0uv/image/upload/v1769263722/Logo-1024x236_bsrhem.png";
 
 const indianStates = [
   "ANDAMAN & NICOBAR ISLANDS", "ANDHRA PRADESH", "ARUNACHAL PRADESH", "ASSAM", "BIHAR", "CHANDIGARH", "CHHATTISGARH", "DADRA AND NAGAR HAVELI AND DAMAN AND DIU", "DELHI", "GOA", "GUJARAT", "HARYANA", "HIMACHAL PRADESH", "JAMMU & KASHMIR", "JHARKHAND", "KARNATAKA", "KERALA", "LADAKH", "LAKSHADWEEP", "MADHYA PRADESH", "MAHARASHTRA", "MANIPUR", "MEGHALAYA", "MIZORAM", "NAGALAND", "ODISHA", "PUDUCHERRY", "PUNJAB", "RAJASTHAN", "SIKKIM", "TAMIL NADU", "TELANGANA", "TRIPURA", "UTTAR PRADESH", "UTTARAKHAND", "WEST BENGAL"
 ];
 
-// --- SCHEMA (Email is Mandatory) ---
+// --- SCHEMA ---
 const customerSchema = z.object({
   fullName: z.string().trim().min(2, 'Name is too short'),
   mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number'),
@@ -37,6 +39,7 @@ const customerSchema = z.object({
   landmark: z.string().optional(),
   city: z.string().trim().min(2, 'City is required'),
   state: z.string().min(1, 'State is required'),
+  transactionId: z.string().trim().min(4, 'Please enter a valid Transaction ID / UTR'),
 });
 
 const Checkout = () => {
@@ -46,40 +49,54 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '', mobile: '', email: '', pincode: '', flat: '', area: '', landmark: '', city: '', state: '',
+    transactionId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Safe redirect if cart is empty
+  // Payment Config State
+  const [paymentConfig, setPaymentConfig] = useState<PaymentSettings | null>(null);
+
   useEffect(() => {
-    if (items.length === 0) {
-      navigate('/cart');
-    }
+    if (items.length === 0) navigate('/cart');
+
+    // Fetch Payment Settings
+    const fetchSettings = async () => {
+      const docRef = doc(db, 'settings', 'payment_config');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) setPaymentConfig(docSnap.data() as PaymentSettings);
+    };
+    fetchSettings();
   }, [items, navigate]);
 
   if (items.length === 0) return null;
 
-  // Handle Input Change (and clear error for that field)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // Handle Select Change (and clear error)
   const handleSelect = (name: string, val: string) => {
     setFormData(prev => ({ ...prev, [name]: val }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  // Generate UPI Deep Link
+  const getUPILink = () => {
+    if (!paymentConfig) return '#';
+    const params = new URLSearchParams({
+      pa: paymentConfig.upiId,
+      pn: paymentConfig.payeeName,
+      am: total.toFixed(2),
+      cu: 'INR'
+    });
+    return `upi://pay?${params.toString()}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    // 1. Validate Form
     const result = customerSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -87,74 +104,47 @@ const Checkout = () => {
         if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
       });
       setErrors(fieldErrors);
-      toast({ title: "Check Fields", description: "Please fill in all required fields.", variant: "destructive" });
+      toast({ title: "Check Fields", description: "Please complete all fields including payment details.", variant: "destructive" });
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      // 2. Save to Firestore
-      const orderData = { customer: formData, items, total };
+      // Pass transactionId to order data
+      const orderData = { customer: formData, items, total, transactionId: formData.transactionId };
       const orderId = await placeOrder(orderData);
 
-      // 3. Prepare Email Data
       const itemsList = items.map(item => `
         <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 12px; border-bottom: 1px solid #eee;">${item.product.name}</td>
-          <td align="center" style="padding: 12px; border-bottom: 1px solid #eee;">x${item.quantity}</td>
-          <td align="right" style="padding: 12px; border-bottom: 1px solid #eee;">₹${(item.product.price * item.quantity).toFixed(2)}</td>
-        </tr>
-      `).join('');
+          <td style="padding: 12px;">${item.product.name}</td>
+          <td align="center">x${item.quantity}</td>
+          <td align="right">₹${(item.product.price * item.quantity).toFixed(2)}</td>
+        </tr>`).join('');
 
-      // Create a clean address string without <br/>
-      const addressParts = [
-        formData.flat,
-        formData.area,
-        formData.landmark,
-        formData.city,
-        `${formData.state} - ${formData.pincode}`
-      ];
-      // Filter out empty parts (like missing landmark) and join with comma
-      const cleanAddress = addressParts.filter(part => part && part.trim().length > 0).join(', ');
+      const cleanAddress = [formData.flat, formData.area, formData.city, `${formData.state}-${formData.pincode}`].filter(Boolean).join(', ');
 
       const templateParams = {
-        // Shared Params
         order_id: orderId,
         total: total.toFixed(2),
         logo_url: LOGO_URL,
         website_link: window.location.origin,
-
-        // Customer Details
         to_name: formData.fullName,
         customer_name: formData.fullName,
         customer_mobile: formData.mobile,
-
-        // Emails
         user_email: formData.email,
         to_email: formData.email,
-        customer_email: formData.email,
-
-        // Address (Updated to use clean string instead of HTML break)
         customer_address: cleanAddress,
-
-        // The HTML Items String
         order_items: itemsList,
+        transaction_id: formData.transactionId, // Added to Email
       };
 
-      // 4. Send Emails
       await Promise.all([
-        // Admin Notification
         emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ADMIN, templateParams, EMAILJS_PUBLIC_KEY),
-        // Customer Receipt
         emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CUSTOMER, templateParams, EMAILJS_PUBLIC_KEY)
       ]);
 
-      toast({
-        title: "Order Placed Successfully!",
-        description: `Order #${orderId} saved. Confirmation email sent to ${formData.email}.`,
-      });
-
+      toast({ title: "Order Placed!", description: `Order #${orderId} confirmed.` });
       clearCart();
       navigate('/');
     } catch (error) {
@@ -177,12 +167,62 @@ const Checkout = () => {
         <h1 className="font-serif text-3xl font-bold text-secondary mb-8">Checkout</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit}>
+          <div className="lg:col-span-2 space-y-6">
+
+            {/* Payment Section - Inserted Before Address */}
+            {paymentConfig && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-primary">
+                    <ScanLine className="h-5 w-5" /> Scan & Pay
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col md:flex-row gap-6 items-center">
+
+                    {/* QR Code for Desktop */}
+                    <div className="hidden md:block bg-white p-2 rounded shadow-sm border">
+                      <img src={paymentConfig.qrImageUrl || "/placeholder.svg"} alt="UPI QR" className="w-48 h-48 object-contain" />
+                    </div>
+
+                    <div className="flex-1 space-y-4 w-full">
+                      <p className="text-sm font-medium">Total Amount: <span className="text-xl font-bold ml-2">₹{total.toFixed(2)}</span></p>
+
+                      {/* Mobile Pay Button */}
+                      <div className="md:hidden">
+                        <a href={getUPILink()} target="_blank" rel="noreferrer" className="w-full">
+                          <Button className="w-full bg-green-600 hover:bg-green-700">
+                            <Smartphone className="mr-2 h-4 w-4" /> Pay via UPI App
+                          </Button>
+                        </a>
+                        <p className="text-xs text-muted-foreground mt-2 text-center">Tap to open GPay / PhonePe</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Transaction ID (UTR) *</Label>
+                        <Input
+                          name="transactionId"
+                          placeholder="Enter 12-digit UTR number after payment"
+                          value={formData.transactionId}
+                          onChange={handleChange}
+                          className={errors.transactionId ? 'border-destructive bg-white' : 'bg-white'}
+                        />
+                        {errors.transactionId ? (
+                          <p className="text-xs text-destructive">{errors.transactionId}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Required to verify your payment.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <form onSubmit={handleSubmit} id="checkout-form">
               <Card>
                 <CardHeader><CardTitle>Delivery Information</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-
                   {/* Name & Mobile */}
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -197,7 +237,7 @@ const Checkout = () => {
                     </div>
                   </div>
 
-                  {/* Email (Mandatory) */}
+                  {/* Email */}
                   <div className="space-y-2">
                     <Label>Email *</Label>
                     <Input name="email" type="email" placeholder="Required for order receipt" value={formData.email} onChange={handleChange} className={errors.email ? 'border-destructive' : ''} />
@@ -245,14 +285,13 @@ const Checkout = () => {
                       {errors.state && <p className="text-xs text-destructive">{errors.state}</p>}
                     </div>
                   </div>
-
                 </CardContent>
                 <CardFooter>
                   <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white" disabled={isProcessing}>
                     {isProcessing ? 'Processing...' : (
                       <>
                         <CreditCard className="mr-2 h-4 w-4" />
-                        Pay ₹{total.toFixed(2)}
+                        Place Order (₹{total.toFixed(2)})
                       </>
                     )}
                   </Button>
@@ -280,17 +319,6 @@ const Checkout = () => {
                     </div>
                   </div>
                 ))}
-                <Separator />
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>₹{total.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span className="text-primary">Free</span>
-                  </div>
-                </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>

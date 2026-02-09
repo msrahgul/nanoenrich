@@ -18,7 +18,6 @@ export interface CartItem {
   quantity: number;
 }
 
-// New Order Interface
 export interface Order {
   id: string;
   customer: {
@@ -36,10 +35,18 @@ export interface Order {
   total: number;
   date: string;
   status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+  transactionId?: string; // Added for UPI tracking
 }
 
 export interface Subscriber {
   id: string;
   email: string;
   date: string;
+}
+
+// Added interface for Payment Settings
+export interface PaymentSettings {
+  upiId: string;
+  payeeName: string;
+  qrImageUrl: string;
 }
