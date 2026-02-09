@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import ImageUploadField from './ImageUploadField';
 
 interface ProductFormProps {
   product?: Product;
@@ -31,9 +32,11 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
     image: '',
     ingredients: '',
     benefits: '',
-    inStock: true,
+    stockStatus: 'in-stock' as 'in-stock' | 'out-of-stock' | 'to-be-launched',
     featured: false,
   });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -47,7 +50,7 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
         image: product.image,
         ingredients: product.ingredients || '',
         benefits: product.benefits?.join('\n') || '',
-        inStock: product.inStock,
+        stockStatus: product.stockStatus,
         featured: product.featured || false,
       });
     } else {
@@ -57,52 +60,72 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
         originalPrice: '',
         description: '',
         longDescription: '',
-        category: categories[1] || '',
+        category: categories.find(c => c !== 'All') || '',
         image: '',
         ingredients: '',
         benefits: '',
-        inStock: true,
+        stockStatus: 'in-stock',
         featured: false,
       });
     }
   }, [product, categories]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name || !formData.price || !formData.category) {
       toast({
         title: 'Error',
-        description: 'Please fill in all required fields',
+        description: 'Please fill in all required fields (Name, Price, Category)',
         variant: 'destructive',
       });
       return;
     }
 
+    const price = parseFloat(formData.price);
+    if (isNaN(price)) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid numeric price',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const originalPrice = formData.originalPrice ? parseFloat(formData.originalPrice) : undefined;
+
     const productData = {
       name: formData.name,
-      price: parseFloat(formData.price),
-      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+      price: price,
+      originalPrice: originalPrice,
+
+
       description: formData.description,
       longDescription: formData.longDescription,
       category: formData.category,
       image: formData.image || '/placeholder.svg',
       ingredients: formData.ingredients || undefined,
       benefits: formData.benefits ? formData.benefits.split('\n').filter(b => b.trim()) : undefined,
-      inStock: formData.inStock,
+      stockStatus: formData.stockStatus,
       featured: formData.featured,
     };
 
-    if (isEditing && product) {
-      updateProduct(product.id, productData);
-      toast({ title: 'Success', description: 'Product updated successfully' });
-    } else {
-      addProduct(productData);
-      toast({ title: 'Success', description: 'Product added successfully' });
+    setIsSubmitting(true);
+    try {
+      if (isEditing && product) {
+        await updateProduct(product.id, productData);
+      } else {
+        await addProduct(productData);
+      }
+      onClose();
+    } catch (error) {
+      // Error is handled by context toast
+      console.error("Form Submission Error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
+
 
   const filteredCategories = categories.filter(c => c !== 'All');
 
@@ -190,15 +213,11 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="image">Image URL</Label>
-            <Input
-              id="image"
-              value={formData.image}
-              onChange={e => setFormData(prev => ({ ...prev, image: e.target.value }))}
-              placeholder="https://example.com/image.jpg"
-            />
-          </div>
+          <ImageUploadField
+            value={formData.image}
+            onChange={url => setFormData(prev => ({ ...prev, image: url }))}
+          />
+
 
           <div className="space-y-2">
             <Label htmlFor="ingredients">Ingredients</Label>
@@ -222,33 +241,42 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
           </div>
 
           <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <Switch className="data-[state=checked]:bg-primary"
-                id="inStock"
-                checked={formData.inStock}
-                onCheckedChange={checked => setFormData(prev => ({ ...prev, inStock: checked }))}
-              />
-              <Label htmlFor="inStock">In Stock</Label>
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="stockStatus">Inventory Status *</Label>
+              <Select
+                value={formData.stockStatus}
+                onValueChange={value => setFormData(prev => ({ ...prev, stockStatus: value as any }))}
+              >
+                <SelectTrigger id="stockStatus">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="in-stock">In Stock</SelectItem>
+                  <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                  <SelectItem value="to-be-launched">To be Launched</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-6">
               <Switch className="data-[state=checked]:bg-primary"
                 id="featured"
                 checked={formData.featured}
                 onCheckedChange={checked => setFormData(prev => ({ ...prev, featured: checked }))}
               />
-              <Label htmlFor="featured">Featured</Label>
+              <Label htmlFor="featured">Featured Product</Label>
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white">
-              {isEditing ? 'Update Product' : 'Add Product'}
+            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : (isEditing ? 'Update Product' : 'Add Product')}
             </Button>
           </div>
+
         </form>
       </DialogContent>
     </Dialog>

@@ -33,9 +33,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
               -{discount}%
             </Badge>
           )}
-          {!product.inStock && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-              <Badge variant="secondary">Out of Stock</Badge>
+          {product.stockStatus !== 'in-stock' && (
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
+              <Badge variant="secondary" className="px-4 py-1 text-sm font-medium shadow-sm">
+                {product.stockStatus === 'out-of-stock' ? 'Out of Stock' : 'To be Launched'}
+              </Badge>
             </div>
           )}
         </div>
@@ -54,27 +56,41 @@ export function ProductCard({ product, className }: ProductCardProps) {
           </p>
         </Link>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-secondary">₹{product.price}</span>
-            {product.originalPrice && (
-              <span className="text-sm text-muted-foreground line-through">
-                ₹{product.originalPrice}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-between min-h-[40px]">
+          {product.stockStatus === 'in-stock' ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-secondary">₹{product.price}</span>
+                {product.originalPrice && (
+                  <span className="text-sm text-muted-foreground line-through">
+                    ₹{product.originalPrice}
+                  </span>
+                )}
+              </div>
 
-          <Button
-            className="bg-primary hover:bg-primary/90 text-white border-none"
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault();
-              addToCart(product);
-            }}
-            disabled={!product.inStock}
-          >
-            <ShoppingCart className="h-4 w-4" />
-          </Button>
+              <Button
+                className="bg-primary hover:bg-primary/90 text-white border-none transition-transform hover:scale-110 active:scale-95"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  addToCart(product);
+                }}
+              >
+                <ShoppingCart className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <div className="flex items-center w-full">
+              <span className={cn(
+                "text-sm font-semibold px-3 py-1 rounded-full",
+                product.stockStatus === 'out-of-stock'
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-primary/10 text-primary"
+              )}>
+                {product.stockStatus === 'out-of-stock' ? 'Currently Unavailable' : 'Coming Soon'}
+              </span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

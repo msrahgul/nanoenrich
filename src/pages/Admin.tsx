@@ -11,8 +11,8 @@ import ProductForm from '@/components/admin/ProductForm';
 import { Plus, Package, Tag, LayoutDashboard, X, TrendingUp, DollarSign, Activity, ShoppingBag, Mail, Users } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
 import { Layout } from '@/components/layout/Layout';
+
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -31,7 +31,6 @@ const Admin = () => {
     products, categories, addCategory, deleteCategory, orders, updateOrderStatus,
     subscribers, isNewsletterEnabled, toggleNewsletterFeature
   } = useProducts();
-  const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
   const [newCategory, setNewCategory] = useState('');
@@ -56,18 +55,17 @@ const Admin = () => {
     if (newCategory.trim()) {
       addCategory(newCategory.trim());
       setNewCategory('');
-      toast({ title: 'Category Added', description: `"${newCategory}" category has been added` });
     }
   };
 
   const handleDeleteCategory = (category: string) => {
     deleteCategory(category);
-    toast({ title: 'Category Deleted', description: `"${category}" category has been removed` });
   };
+
 
   // --- Derived Data for UI ---
   const totalProducts = products.length;
-  const inStockProducts = products.filter(p => p.inStock).length;
+  const inStockProducts = products.filter(p => p.stockStatus === 'in-stock').length;
   const featuredProducts = products.filter(p => p.featured).length;
   const totalCategories = categories.filter(c => c !== 'All').length;
 
@@ -99,12 +97,18 @@ const Admin = () => {
               Overview of your store's performance and inventory.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            {(!import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || !import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET) && (
+              <Badge variant="outline" className="text-amber-600 border-amber-600 bg-amber-50">
+                Cloudinary Not Configured
+              </Badge>
+            )}
             <Button onClick={handleAddProduct} className="bg-primary hover:bg-primary/90 text-white shadow-sm">
               <Plus className="h-4 w-4 mr-2" />
               Add New Product
             </Button>
           </div>
+
         </div>
 
         {/* Tabs Navigation */}

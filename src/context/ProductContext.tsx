@@ -58,7 +58,14 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Fetch Products
       const prodSnap = await getDocs(productsCol);
-      setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+      setProducts(prodSnap.docs.map(d => {
+        const data = d.data();
+        let stockStatus = data.stockStatus;
+        if (!stockStatus) {
+          stockStatus = data.inStock === false ? 'out-of-stock' : 'in-stock';
+        }
+        return { id: d.id, ...data, stockStatus } as Product;
+      }));
 
       // Fetch Categories
       const catSnap = await getDocs(categoriesCol);
@@ -83,46 +90,87 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       }
 
     } catch (error) {
-      console.error("Firebase Error:", error);
-      // Optional: Suppress initial toast to avoid noise on first load
+      console.error("Firebase Fetch Error:", error);
+      toast({
+        title: "Connection Error",
+        description: "Failed to load shop data. Please check your internet or Firebase config.",
+        variant: "destructive"
+      });
     } finally {
+
       setIsLoading(false);
     }
   };
 
   useEffect(() => { fetchData(); }, []);
 
+  // Helper to remove undefined fields for Firestore
+  const cleanData = (data: any) => {
+    const cleaned = { ...data };
+    Object.keys(cleaned).forEach(key => {
+      if (cleaned[key] === undefined) {
+        delete cleaned[key];
+      }
+    });
+    return cleaned;
+  };
+
   // --- 2. Product Actions ---
   const addProduct = async (data: Omit<Product, 'id'>) => {
     try {
-      const docRef = await addDoc(productsCol, data);
-      setProducts(prev => [{ ...data, id: docRef.id }, ...prev]);
-      toast({ title: "Success", description: "Product added." });
-    } catch (e) { console.error(e); }
+      const cleaned = cleanData(data);
+      const docRef = await addDoc(productsCol, cleaned);
+      setProducts(prev => [{ ...data, id: docRef.id } as Product, ...prev]);
+      toast({ title: "Success", description: "Product added successfully." });
+    } catch (e) {
+      console.error("Add Product Error:", e);
+      toast({ title: "Error", description: "Failed to add product. Please try again.", variant: "destructive" });
+      throw e;
+    }
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      await updateDoc(doc(db, 'products', id), updates);
-      setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
-      toast({ title: "Success", description: "Product updated." });
-    } catch (e) { console.error(e); }
+      const cleaned = cleanData(updates);
+      // Ensure we don't try to update the ID
+      delete (cleaned as any).id;
+
+      await updateDoc(doc(db, 'products', id), cleaned);
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } as Product : p));
+      toast({ title: "Success", description: "Product updated successfully." });
+    } catch (e) {
+      console.error("Update Product Error:", e);
+      toast({ title: "Error", description: "Failed to update product.", variant: "destructive" });
+      throw e;
+    }
   };
 
   const deleteProduct = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'products', id));
       setProducts(prev => prev.filter(p => p.id !== id));
-      toast({ title: "Deleted", description: "Product removed." });
-    } catch (e) { console.error(e); }
+      toast({ title: "Deleted", description: "Product removed successfully." });
+    } catch (e) {
+      console.error("Delete Product Error:", e);
+      toast({ title: "Error", description: "Failed to delete product.", variant: "destructive" });
+      throw e;
+    }
   };
 
   // --- 3. Category Actions ---
   const addCategory = async (category: string) => {
     try {
+      if (categories.includes(category)) {
+        toast({ title: "Info", description: "Category already exists." });
+        return;
+      }
       await addDoc(categoriesCol, { name: category });
       setCategories(prev => [...prev, category]);
-    } catch (e) { console.error(e); }
+      toast({ title: "Success", description: "Category added." });
+    } catch (e) {
+      console.error("Add Category Error:", e);
+      toast({ title: "Error", description: "Failed to add category.", variant: "destructive" });
+    }
   };
 
   const deleteCategory = async (category: string) => {
@@ -134,9 +182,14 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       if (docToDelete) {
         await deleteDoc(doc(db, 'categories', docToDelete.id));
         setCategories(prev => prev.filter(c => c !== category));
+        toast({ title: "Deleted", description: "Category removed." });
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error("Delete Category Error:", e);
+      toast({ title: "Error", description: "Failed to delete category.", variant: "destructive" });
+    }
   };
+
 
   // --- 4. Order Actions (SEQUENTIAL ID LOGIC) ---
   const placeOrder = async (data: Omit<Order, 'id' | 'date' | 'status'>) => {

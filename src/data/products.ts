@@ -33,7 +33,7 @@ export const products: Product[] = [
       'Powerful antioxidant properties',
       'Supports digestive health',
     ],
-    inStock: true,
+    stockStatus: 'in-stock',
     featured: true,
   },
   {
@@ -52,7 +52,7 @@ export const products: Product[] = [
       'Enhances nutrient absorption',
       'Natural detox support',
     ],
-    inStock: true,
+    stockStatus: 'in-stock',
     featured: true,
   },
   {
@@ -70,7 +70,7 @@ export const products: Product[] = [
       'Prevents bad breath',
       'Fluoride-free formula',
     ],
-    inStock: true,
+    stockStatus: 'in-stock',
     featured: true,
   },
   {
@@ -89,7 +89,7 @@ export const products: Product[] = [
       'Enhances natural food flavors',
       'No anti-caking agents',
     ],
-    inStock: true,
+    stockStatus: 'in-stock',
     featured: true,
   },
   {
@@ -107,7 +107,7 @@ export const products: Product[] = [
       'Balances skin pH',
       'Mineral-rich nourishment',
     ],
-    inStock: true,
+    stockStatus: 'in-stock',
   },
   {
     id: '6',
@@ -125,7 +125,7 @@ export const products: Product[] = [
       'Boosts metabolism',
       'Refreshing taste',
     ],
-    inStock: true,
+    stockStatus: 'in-stock',
     featured: true,
   },
 ];

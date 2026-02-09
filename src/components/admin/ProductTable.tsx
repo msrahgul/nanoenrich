@@ -23,7 +23,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Edit, Trash2, Star } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 interface ProductTableProps {
   onEdit: (product: Product) => void;
@@ -31,15 +30,15 @@ interface ProductTableProps {
 
 const ProductTable = ({ onEdit }: ProductTableProps) => {
   const { products, deleteProduct } = useProducts();
-  const { toast } = useToast();
 
-  const handleDelete = (id: string, name: string) => {
-    deleteProduct(id);
-    toast({
-      title: 'Product Deleted',
-      description: `"${name}" has been removed`,
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProduct(id);
+    } catch (error) {
+      // Error handled by context
+    }
   };
+
 
   return (
     <div className="rounded-md border">
@@ -85,8 +84,18 @@ const ProductTable = ({ onEdit }: ProductTableProps) => {
                   )}
                 </TableCell>
                 <TableCell className="text-center">
-                  <Badge variant={product.inStock ? 'default' : 'destructive'}>
-                    {product.inStock ? 'In Stock' : 'Out of Stock'}
+                  <Badge variant={
+                    product.stockStatus === 'in-stock'
+                      ? 'default'
+                      : product.stockStatus === 'out-of-stock'
+                        ? 'destructive'
+                        : 'secondary'
+                  }>
+                    {product.stockStatus === 'in-stock'
+                      ? 'In Stock'
+                      : product.stockStatus === 'out-of-stock'
+                        ? 'Out of Stock'
+                        : 'To be Launched'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">
@@ -119,7 +128,8 @@ const ProductTable = ({ onEdit }: ProductTableProps) => {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => handleDelete(product.id, product.name)}
+                            onClick={() => handleDelete(product.id)}
+
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
                             Delete

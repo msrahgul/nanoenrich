@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/context/ProductContext';
 import { ProductCard } from '@/components/products/ProductCard';
+import { cn } from '@/lib/utils';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -91,17 +92,19 @@ const ProductDetail = () => {
               {product.name}
             </h1>
 
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-3xl font-bold text-secondary">₹{product.price}</span>
-              {product.originalPrice && (
-                <>
-                  <span className="text-xl text-muted-foreground line-through">
-                    ₹{product.originalPrice}
-                  </span>
-                  <Badge variant="secondary">Save ₹{product.originalPrice - product.price}</Badge>
-                </>
-              )}
-            </div>
+            {product.stockStatus === 'in-stock' && (
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl font-bold text-secondary">₹{product.price}</span>
+                {product.originalPrice && (
+                  <>
+                    <span className="text-xl text-muted-foreground line-through">
+                      ₹{product.originalPrice}
+                    </span>
+                    <Badge variant="secondary">Save ₹{product.originalPrice - product.price}</Badge>
+                  </>
+                )}
+              </div>
+            )}
 
             <p className="text-muted-foreground mb-6">{product.longDescription}</p>
 
@@ -131,48 +134,61 @@ const ProductDetail = () => {
             <Separator className="my-6" />
 
             {/* Quantity & Add to Cart */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex items-center border border-border rounded-lg">
+            {product.stockStatus === 'in-stock' ? (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex items-center border border-border rounded-lg">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-12 text-center font-medium">{quantity}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                  onClick={handleAddToCart}
                 >
-                  <Minus className="h-4 w-4" />
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Add to Cart
                 </Button>
-                <span className="w-12 text-center font-medium">{quantity}</span>
+
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setQuantity(quantity + 1)}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-white"
+                  onClick={handleBuyNow}
                 >
-                  <Plus className="h-4 w-4" />
+                  Buy Now
                 </Button>
               </div>
-
-              <Button
-                variant="outline"
-                size="lg"
-                className="flex-1"
-                onClick={handleAddToCart}
-                disabled={!product.inStock}
-              >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Add to Cart
-              </Button>
-
-              <Button
-                className="flex-1 bg-primary hover:bg-primary/90 text-white"
-                onClick={handleBuyNow}
-                disabled={!product.inStock}
-              >
-                Buy Now
-              </Button>
-            </div>
-
-            {!product.inStock && (
-              <p className="text-destructive mt-4 text-sm">This product is currently out of stock.</p>
+            ) : (
+              <div className={cn(
+                "p-4 rounded-xl border flex items-center gap-3",
+                product.stockStatus === 'out-of-stock'
+                  ? "bg-destructive/5 border-destructive/20 text-destructive"
+                  : "bg-primary/5 border-primary/20 text-primary"
+              )}>
+                <div className={cn(
+                  "h-2 w-2 rounded-full animate-pulse",
+                  product.stockStatus === 'out-of-stock' ? "bg-destructive" : "bg-primary"
+                )} />
+                <p className="font-semibold">
+                  {product.stockStatus === 'out-of-stock'
+                    ? "Currently Out of Stock"
+                    : "Coming Soon - To be Launched"}
+                </p>
+              </div>
             )}
 
             {/* Trust Badge */}

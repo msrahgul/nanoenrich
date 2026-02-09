@@ -9,7 +9,7 @@ export interface Product {
   image: string;
   ingredients?: string;
   benefits?: string[];
-  inStock: boolean;
+  stockStatus: 'in-stock' | 'out-of-stock' | 'to-be-launched';
   featured?: boolean;
 }
 

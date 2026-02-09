@@ -53,31 +53,17 @@ const Contact = () => {
 
     try {
       await emailjs.send(
-        "service_8unf5te", // Service ID from Checkout (assuming same service)
-        "template_r941dq9", // Using a placeholder/guessing or should I ask? 
-        // WAIT, the user provided specific keys in the snippet for Contact.tsx in step 38 request text?
-        // Let me check the user request again.
-        // User request Step 3:
-        // await emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", ...)
-        // User request Step 4 (Checkout):
-        // const EMAILJS_SERVICE_ID = "service_8unf5te";
-        // It's safer to use the keys from Checkout if they are available, or placeholders if indicated. 
-        // The user's request for Contact.tsx had "YOUR_SERVICE_ID".
-        // However, in Checkout.tsx they put REAL keys. 
-        // I will use the REAL keys from Checkout.tsx for Service ID, but maybe I should use placeholders for Template ID if I don't know the Contact template ID.
-        // Actually, looking at the Checkout keys: "template_r941dq9" (Customer), "template_de83365" (Admin).
-        // I'll just use "YOUR_TEMPLATE_ID" as requested in the snippet for Contact.tsx and let the user fill it, OR better, I'll use the ones they provided in the prompt for Contact.tsx if they were specific... they were "YOUR_TEMPLATE_ID".
-        // I'll stick to what was requested in Step 3 prompt: "YOUR_SERVICE_ID".
-        // Wait, the user said: "Replace the entire handleSubmit logic to use EmailJS directly." 
-        // And provided code with "YOUR_SERVICE_ID".
-        // I should probably use that code exactly as provided, maybe adding the import.
+        "service_yc01lbo", // Service ID
+        "template_90zv68f", // Template ID (Customer Receipt/Contact)
         {
           from_name: formData.name,
           from_email: formData.email,
           subject: formData.subject,
           message: formData.message,
+          logo_url: "https://res.cloudinary.com/ddjzmk0uv/image/upload/v1769263722/Logo-1024x236_bsrhem.png",
+          website_link: window.location.origin,
         },
-        "ijn0RxxgT7NBfqboJ" // Public Key from Checkout
+        "3Vt2AYOx00XjFyM0I" // Public Key from Checkout
       );
 
       toast({
