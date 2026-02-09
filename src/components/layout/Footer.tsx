@@ -92,19 +92,16 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-primary mt-0.5" />
                 <span className="text-sm text-muted-foreground">
-                  54/1, 2nd Street
-                  Near Cauvery Tank,
-                  MVM Nagar, Dindigul,
-                  Tamil Nadu
+                  {import.meta.env.VITE_COMPANY_ADDRESS}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-primary" />
-                <span className="text-sm text-muted-foreground">+91 88701 73412</span>
+                <span className="text-sm text-muted-foreground">{import.meta.env.VITE_COMPANY_PHONE}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-primary" />
-                <span className="text-sm text-muted-foreground">nanoenrich@gmail.com</span>
+                <span className="text-sm text-muted-foreground">{import.meta.env.VITE_COMPANY_EMAIL}</span>
               </li>
             </ul>
           </div>

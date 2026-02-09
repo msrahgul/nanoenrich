@@ -16,11 +16,8 @@ const ImageUploadField = ({ value, onChange, label = "Product Image" }: ImageUpl
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
-    // Note: These should ideally be in your .env file
-    // VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
-    // VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'drpxm7hvt';
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'nanoenrich_unsigned';
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

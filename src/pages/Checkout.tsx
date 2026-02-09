@@ -17,20 +17,12 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { PaymentSettings } from '@/types';
 
-// --- CONFIG ---
-const EMAILJS_SERVICE_ID = "service_yc01lbo";
-const EMAILJS_TEMPLATE_CUSTOMER = "template_90zv68f";
-const EMAILJS_TEMPLATE_ADMIN = "template_j10mkvs";
-const EMAILJS_PUBLIC_KEY = "3Vt2AYOx00XjFyM0I";
-const LOGO_URL = "https://res.cloudinary.com/ddjzmk0uv/image/upload/v1769263722/Logo-1024x236_bsrhem.png";
-
-// --- WHATSAPP CONFIG (OFFICIAL CLOUD API - FREE TIER) ---
-// 1. Go to developers.facebook.com and create a Business App
-// 2. Set up WhatsApp and get your Phone Number ID and Access Token
-// 3. This is FREE for the first 1,000 conversations per month.
-const WA_PHONE_ID = "YOUR_PHONE_NUMBER_ID";
-const WA_TOKEN = "YOUR_PERMANENT_ACCESS_TOKEN";
-const WA_API_URL = `https://graph.facebook.com/v17.0/${WA_PHONE_ID}/messages`;
+// --- EMAILJS CONFIG ---
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_UNIFIED = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+const LOGO_URL = import.meta.env.VITE_LOGO_URL;
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
 
 const indianStates = [
@@ -111,50 +103,13 @@ const Checkout = () => {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // --- NEW: FUNCTION TO SEND WHATSAPP (OFFICIAL CLOUD API) ---
-  const sendWhatsAppNotification = async (orderId: string, mobile: string, name: string) => {
-    try {
-      // Format Mobile (Ensure 91 prefix and no symbols)
-      let formattedMobile = mobile.replace(/\D/g, '');
-      if (formattedMobile.length === 10) formattedMobile = '91' + formattedMobile;
-
-      // NOTE: Official Cloud API usually requires "Templates" for business-initiated messages.
-      // For a quick setup, you can use a simple text message if the customer has messaged you first.
-      // But for Order Confirmations, you should eventually set up a "template" in Meta.
-
-      const response = await fetch(WA_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${WA_TOKEN}`
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          to: formattedMobile,
-          type: "text",
-          text: {
-            body: `Hello ${name}!\n\nThank you for your order at NanoEnrich!\n\nOrder ID: #${orderId}\nTotal Amount: ₹${total.toFixed(2)}\n\nWe have received your payment (UTR: ${formData.transactionId}) and will process your order shortly.`
-          }
-        })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        console.log("WhatsApp sent successfully:", data);
-      } else {
-        console.error("WhatsApp API Error:", data);
-      }
-    } catch (error) {
-      console.error("Failed to send WhatsApp:", error);
-    }
-  };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
+    // 1. Validate Form
     const result = customerSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -162,22 +117,18 @@ const Checkout = () => {
         if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
       });
       setErrors(fieldErrors);
-      toast({ title: "Check Fields", description: "Please complete all fields including payment details.", variant: "destructive" });
+      toast({ title: "Check Fields", description: "Please fill in all required fields.", variant: "destructive" });
       return;
     }
 
     setIsProcessing(true);
 
     try {
+      // 2. Save to Firestore
       const orderData = { customer: formData, items, total, transactionId: formData.transactionId };
-
-      // 1. Save to Firebase
       const orderId = await placeOrder(orderData);
 
-      // 2. Send WhatsApp
-      sendWhatsAppNotification(orderId, formData.mobile, formData.fullName);
-
-      // 3. Prepare & Send Emails
+      // 4. Prepare Common Data (Items List & Address)
       const itemsList = items.map(item => `
         <tr style="border-bottom: 1px solid #eee;">
           <td style="padding: 12px;">${item.product.name}</td>
@@ -185,29 +136,67 @@ const Checkout = () => {
           <td align="right">₹${(item.product.price * item.quantity).toFixed(2)}</td>
         </tr>`).join('');
 
-      const cleanAddress = [formData.flat, formData.area, formData.city, `${formData.state}-${formData.pincode}`].filter(Boolean).join(', ');
+      const cleanAddress = [
+        formData.flat,
+        formData.area,
+        formData.landmark,
+        formData.city,
+        `${formData.state} - ${formData.pincode}`
+      ].filter(Boolean).join(', ');
 
-      const templateParams = {
-        order_id: orderId,
-        total: total.toFixed(2),
+      // --- EMAIL 1: CUSTOMER CONFIRMATION ---
+      const customerParams = {
+        // Configuration
+        to_email: formData.email,
+        to_name: formData.fullName,       // "Hi Sara"
         logo_url: LOGO_URL,
         website_link: window.location.origin,
-        to_name: formData.fullName,
-        customer_name: formData.fullName,
-        customer_mobile: formData.mobile,
-        user_email: formData.email,
-        to_email: formData.email,
-        customer_address: cleanAddress,
+        reply_to: ADMIN_EMAIL,
+
+        // Content
+        subject: `Order Confirmation #${orderId} - NanoEnrich`,
+        status_title: `Order Confirmation #${orderId}`,
+        status_message: "Thank you for your order! We have received your request and payment details. We will verify the transaction and ship your items shortly.",
+        highlight_info: `Payment Info: UTR ${formData.transactionId}`, // Shows UTR to customer
+
+        // Data
         order_items: itemsList,
-        transaction_id: formData.transactionId,
+        total: total.toFixed(2),
+        customer_address: cleanAddress,
       };
 
+      // --- EMAIL 2: ADMIN ALERT (Reusing same template) ---
+      const adminParams = {
+        // Configuration
+        to_email: ADMIN_EMAIL,
+        to_name: "Admin",                        // "Hi Admin"
+        logo_url: LOGO_URL,
+        website_link: window.location.origin + "/login",
+        reply_to: formData.email,
+
+        // Content
+        subject: `🔔 New Order: #${orderId} - ₹${total.toFixed(2)}`,
+        status_title: `New Order Alert: #${orderId}`,
+        status_message: `<b>${formData.fullName}</b> has placed a new order. <br/>Mobile: ${formData.mobile} <br/>Email: ${formData.email} <br/>Please verify the payment UTR below.`,
+        highlight_info: `VERIFY PAYMENT: UTR ${formData.transactionId}`, // Highlight for Admin
+
+        // Data
+        order_items: itemsList,
+        total: total.toFixed(2),
+        customer_address: cleanAddress,
+      };
+
+      // 5. Send Both Emails in Parallel
       await Promise.all([
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ADMIN, templateParams, EMAILJS_PUBLIC_KEY),
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CUSTOMER, templateParams, EMAILJS_PUBLIC_KEY)
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_UNIFIED, customerParams, EMAILJS_PUBLIC_KEY),
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_UNIFIED, adminParams, EMAILJS_PUBLIC_KEY)
       ]);
 
-      toast({ title: "Order Placed!", description: `Order #${orderId} confirmed.` });
+      toast({
+        title: "Order Placed Successfully!",
+        description: `Order #${orderId} saved. Confirmation email sent.`,
+      });
+
       clearCart();
       navigate('/');
     } catch (error) {
@@ -417,16 +406,18 @@ const Checkout = () => {
             <Card className="sticky top-24">
               <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                {items.map(i => (
-                  <div key={i.product.id} className="flex gap-3">
-                    <img src={i.product.image} alt={i.product.name} className="w-16 h-16 object-cover rounded" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{i.product.name}</p>
-                      <p className="text-xs text-muted-foreground">Qty: {i.quantity}</p>
-                      <p className="text-sm font-medium">₹{(i.product.price * i.quantity).toFixed(2)}</p>
+                <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-hide space-y-4">
+                  {items.map(i => (
+                    <div key={i.product.id} className="flex gap-3">
+                      <img src={i.product.image} alt={i.product.name} className="w-16 h-16 object-cover rounded" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{i.product.name}</p>
+                        <p className="text-xs text-muted-foreground">Qty: {i.quantity}</p>
+                        <p className="text-sm font-medium">₹{(i.product.price * i.quantity).toFixed(2)}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>

@@ -53,17 +53,17 @@ const Contact = () => {
 
     try {
       await emailjs.send(
-        "service_yc01lbo", // Service ID
-        "template_90zv68f", // Template ID (Customer Receipt/Contact)
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
         {
           from_name: formData.name,
           from_email: formData.email,
           subject: formData.subject,
           message: formData.message,
-          logo_url: "https://res.cloudinary.com/ddjzmk0uv/image/upload/v1769263722/Logo-1024x236_bsrhem.png",
+          logo_url: import.meta.env.VITE_LOGO_URL,
           website_link: window.location.origin,
         },
-        "3Vt2AYOx00XjFyM0I" // Public Key from Checkout
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
       );
 
       toast({
@@ -88,17 +88,17 @@ const Contact = () => {
     {
       icon: Phone,
       title: 'Phone',
-      details: ['+91 88701 73412'],
+      details: [import.meta.env.VITE_COMPANY_PHONE],
     },
     {
       icon: Mail,
       title: 'Email',
-      details: ['nanoenrich@gmail.com'],
+      details: [import.meta.env.VITE_COMPANY_EMAIL],
     },
     {
       icon: MapPin,
       title: 'Address',
-      details: ['54/1, 2nd Street Near Cauvery Tank, MVM Nagar, Dindigul, Tamil Nadu, India'],
+      details: [import.meta.env.VITE_COMPANY_ADDRESS],
     },
     {
       icon: Clock,
