@@ -80,7 +80,28 @@ const Admin = () => {
   };
 
   const handleWhatsAppUpdate = (order: any) => {
-    const message = `Hello ${order.customer.fullName}, update regarding your order #${order.id}. Current Status: ${order.status}.`;
+    let message = "";
+
+    switch (order.status) {
+      case 'Pending':
+        message = `Hello ${order.customer.fullName}, thank you for your order #${order.id.slice(0, 6)} at Nano Enrich! We have received your order and it is currently pending. We will start processing it soon. Thank you for your patience!`;
+        break;
+      case 'Processing':
+        message = `Hi ${order.customer.fullName}, your order #${order.id.slice(0, 6)} is now being processed. We're getting your items ready for shipment! We'll notify you once it's on its way.`;
+        break;
+      case 'Shipped':
+        message = `Great news ${order.customer.fullName}! Your order #${order.id.slice(0, 6)} has been shipped and is on its way to you. It should be with you shortly!`;
+        break;
+      case 'Delivered':
+        message = `Hi ${order.customer.fullName}, your order #${order.id.slice(0, 6)} has been delivered! We hope you enjoy your Nano Enrich products. Thank you for shopping with us!`;
+        break;
+      case 'Cancelled':
+        message = `Hi ${order.customer.fullName}, we're sorry to inform you that your order #${order.id.slice(0, 6)} has been cancelled. If you have any questions, please feel free to reach out to us.`;
+        break;
+      default:
+        message = `Hello ${order.customer.fullName}, update regarding your order #${order.id.slice(0, 6)}. Current Status: ${order.status}.`;
+    }
+
     const url = `https://wa.me/91${order.customer.mobile}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };

@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/context/ProductContext';
 import { toast } from '@/hooks/use-toast';
-import { Lock, CreditCard, ArrowLeft, ScanLine, Smartphone } from 'lucide-react';
+import { Lock, CreditCard, ArrowLeft, ScanLine, Smartphone, Copy, Check } from 'lucide-react';
 import { z } from 'zod';
 import emailjs from '@emailjs/browser';
 import { doc, getDoc } from 'firebase/firestore';
@@ -23,6 +23,15 @@ const EMAILJS_TEMPLATE_CUSTOMER = "template_90zv68f";
 const EMAILJS_TEMPLATE_ADMIN = "template_j10mkvs";
 const EMAILJS_PUBLIC_KEY = "3Vt2AYOx00XjFyM0I";
 const LOGO_URL = "https://res.cloudinary.com/ddjzmk0uv/image/upload/v1769263722/Logo-1024x236_bsrhem.png";
+
+// --- WHATSAPP CONFIG (OFFICIAL CLOUD API - FREE TIER) ---
+// 1. Go to developers.facebook.com and create a Business App
+// 2. Set up WhatsApp and get your Phone Number ID and Access Token
+// 3. This is FREE for the first 1,000 conversations per month.
+const WA_PHONE_ID = "YOUR_PHONE_NUMBER_ID";
+const WA_TOKEN = "YOUR_PERMANENT_ACCESS_TOKEN";
+const WA_API_URL = `https://graph.facebook.com/v17.0/${WA_PHONE_ID}/messages`;
+
 
 const indianStates = [
   "ANDAMAN & NICOBAR ISLANDS", "ANDHRA PRADESH", "ARUNACHAL PRADESH", "ASSAM", "BIHAR", "CHANDIGARH", "CHHATTISGARH", "DADRA AND NAGAR HAVELI AND DAMAN AND DIU", "DELHI", "GOA", "GUJARAT", "HARYANA", "HIMACHAL PRADESH", "JAMMU & KASHMIR", "JHARKHAND", "KARNATAKA", "KERALA", "LADAKH", "LAKSHADWEEP", "MADHYA PRADESH", "MAHARASHTRA", "MANIPUR", "MEGHALAYA", "MIZORAM", "NAGALAND", "ODISHA", "PUDUCHERRY", "PUNJAB", "RAJASTHAN", "SIKKIM", "TAMIL NADU", "TELANGANA", "TRIPURA", "UTTAR PRADESH", "UTTARAKHAND", "WEST BENGAL"
@@ -55,6 +64,7 @@ const Checkout = () => {
 
   // Payment Config State
   const [paymentConfig, setPaymentConfig] = useState<PaymentSettings | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) navigate('/cart');
@@ -93,6 +103,54 @@ const Checkout = () => {
     return `upi://pay?${params.toString()}`;
   };
 
+  const handleCopyLink = () => {
+    const link = getUPILink();
+    navigator.clipboard.writeText(link);
+    setIsCopied(true);
+    toast({ title: "Link Copied", description: "Payment link copied to clipboard." });
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  // --- NEW: FUNCTION TO SEND WHATSAPP (OFFICIAL CLOUD API) ---
+  const sendWhatsAppNotification = async (orderId: string, mobile: string, name: string) => {
+    try {
+      // Format Mobile (Ensure 91 prefix and no symbols)
+      let formattedMobile = mobile.replace(/\D/g, '');
+      if (formattedMobile.length === 10) formattedMobile = '91' + formattedMobile;
+
+      // NOTE: Official Cloud API usually requires "Templates" for business-initiated messages.
+      // For a quick setup, you can use a simple text message if the customer has messaged you first.
+      // But for Order Confirmations, you should eventually set up a "template" in Meta.
+
+      const response = await fetch(WA_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${WA_TOKEN}`
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: formattedMobile,
+          type: "text",
+          text: {
+            body: `Hello ${name}!\n\nThank you for your order at NanoEnrich!\n\nOrder ID: #${orderId}\nTotal Amount: ₹${total.toFixed(2)}\n\nWe have received your payment (UTR: ${formData.transactionId}) and will process your order shortly.`
+          }
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        console.log("WhatsApp sent successfully:", data);
+      } else {
+        console.error("WhatsApp API Error:", data);
+      }
+    } catch (error) {
+      console.error("Failed to send WhatsApp:", error);
+    }
+  };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -111,10 +169,15 @@ const Checkout = () => {
     setIsProcessing(true);
 
     try {
-      // Pass transactionId to order data
       const orderData = { customer: formData, items, total, transactionId: formData.transactionId };
+
+      // 1. Save to Firebase
       const orderId = await placeOrder(orderData);
 
+      // 2. Send WhatsApp
+      sendWhatsAppNotification(orderId, formData.mobile, formData.fullName);
+
+      // 3. Prepare & Send Emails
       const itemsList = items.map(item => `
         <tr style="border-bottom: 1px solid #eee;">
           <td style="padding: 12px;">${item.product.name}</td>
@@ -136,7 +199,7 @@ const Checkout = () => {
         to_email: formData.email,
         customer_address: cleanAddress,
         order_items: itemsList,
-        transaction_id: formData.transactionId, // Added to Email
+        transaction_id: formData.transactionId,
       };
 
       await Promise.all([
@@ -169,57 +232,7 @@ const Checkout = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Payment Section - Inserted Before Address */}
-            {paymentConfig && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-primary">
-                    <ScanLine className="h-5 w-5" /> Scan & Pay
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col md:flex-row gap-6 items-center">
-
-                    {/* QR Code for Desktop */}
-                    <div className="hidden md:block bg-white p-2 rounded shadow-sm border">
-                      <img src={paymentConfig.qrImageUrl || "/placeholder.svg"} alt="UPI QR" className="w-48 h-48 object-contain" />
-                    </div>
-
-                    <div className="flex-1 space-y-4 w-full">
-                      <p className="text-sm font-medium">Total Amount: <span className="text-xl font-bold ml-2">₹{total.toFixed(2)}</span></p>
-
-                      {/* Mobile Pay Button */}
-                      <div className="md:hidden">
-                        <a href={getUPILink()} target="_blank" rel="noreferrer" className="w-full">
-                          <Button className="w-full bg-green-600 hover:bg-green-700">
-                            <Smartphone className="mr-2 h-4 w-4" /> Pay via UPI App
-                          </Button>
-                        </a>
-                        <p className="text-xs text-muted-foreground mt-2 text-center">Tap to open GPay / PhonePe</p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Transaction ID (UTR) *</Label>
-                        <Input
-                          name="transactionId"
-                          placeholder="Enter 12-digit UTR number after payment"
-                          value={formData.transactionId}
-                          onChange={handleChange}
-                          className={errors.transactionId ? 'border-destructive bg-white' : 'bg-white'}
-                        />
-                        {errors.transactionId ? (
-                          <p className="text-xs text-destructive">{errors.transactionId}</p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Required to verify your payment.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <form onSubmit={handleSubmit} id="checkout-form">
+            <form onSubmit={handleSubmit} id="checkout-form" className="space-y-6">
               <Card>
                 <CardHeader><CardTitle>Delivery Information</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
@@ -286,17 +299,112 @@ const Checkout = () => {
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white" disabled={isProcessing}>
-                    {isProcessing ? 'Processing...' : (
-                      <>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Place Order (₹{total.toFixed(2)})
-                      </>
-                    )}
-                  </Button>
-                </CardFooter>
               </Card>
+
+              {/* Payment Section - Now Second */}
+              {paymentConfig && (
+                <Card className="border-primary/20 bg-primary/5 shadow-lg overflow-hidden">
+                  <div className="bg-primary/10 px-6 py-3 border-b border-primary/10">
+                    <CardTitle className="flex items-center gap-2 text-primary text-lg">
+                      <ScanLine className="h-5 w-5" /> Finalize Payment
+                    </CardTitle>
+                  </div>
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
+
+                      {/* QR Code */}
+                      <div className="space-y-2">
+                        <div className="bg-white p-3 rounded-lg shadow-sm border inline-block">
+                          <img src={paymentConfig.qrImageUrl || "/placeholder.svg"} alt="UPI QR" className="w-48 h-48 object-contain" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Scan with any UPI App</p>
+                      </div>
+
+                      <div className="flex-1 space-y-6 w-full text-left">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Payable Amount</p>
+                          <p className="text-4xl font-extrabold text-secondary">₹{total.toFixed(2)}</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Pay Button - Mobile Only */}
+                          <a href={getUPILink()} target="_blank" rel="noreferrer" className="w-full block md:hidden">
+                            <Button className="w-full bg-green-600 hover:bg-green-700 h-12 shadow-md font-bold">
+                              <Smartphone className="mr-2 h-4 w-4" /> Pay via UPI App
+                            </Button>
+                          </a>
+
+                          {/* Copy Link Button */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCopyLink}
+                            className="w-full border-primary/20 hover:bg-primary/5 h-12 shadow-sm font-medium"
+                          >
+                            {isCopied ? (
+                              <><Check className="mr-2 h-4 w-4 text-green-600" /> Copied!</>
+                            ) : (
+                              <><Copy className="mr-2 h-4 w-4" /> Copy Payment Link</>
+                            )}
+                          </Button>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between bg-white/50 p-2.5 rounded-md text-sm border border-dashed border-primary/30">
+                            <span className="text-muted-foreground truncate mr-2">
+                              UPI: <span className="font-mono font-semibold text-foreground select-all">{paymentConfig.upiId}</span>
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-primary/10"
+                              onClick={() => {
+                                navigator.clipboard.writeText(paymentConfig.upiId);
+                                toast({ title: "UPI ID Copied" });
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-xl border-2 border-primary/20 space-y-4 shadow-sm relative group transition-all duration-300 hover:border-primary/40">
+                          <div className="space-y-2">
+                            <Label className="text-xs text-primary uppercase font-bold tracking-widest">Step 3: Enter Transaction ID (UTR) *</Label>
+                            <Input
+                              name="transactionId"
+                              placeholder="12-digit number from payment screen"
+                              value={formData.transactionId}
+                              onChange={handleChange}
+                              className={`h-12 text-lg font-mono tracking-widest ${errors.transactionId ? 'border-destructive' : 'border-primary/20 focus:border-primary'}`}
+                            />
+                            {errors.transactionId ? (
+                              <p className="text-xs text-destructive font-medium">{errors.transactionId}</p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">Important: Your order will be verified using this ID.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="bg-primary/5 border-t border-primary/10 p-6">
+                    <Button
+                      type="submit"
+                      className="w-full bg-primary hover:bg-primary/90 text-white h-14 text-lg font-bold shadow-xl transition-all active:scale-95"
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? 'Processing Order...' : (
+                        <>
+                          <CreditCard className="mr-3 h-5 w-5" />
+                          Confirm & Place Order
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )}
             </form>
             <div className="flex items-center gap-2 justify-center mt-4 text-sm text-muted-foreground">
               <Lock className="h-4 w-4" />
