@@ -19,31 +19,35 @@ export function ProductCard({ product, className }: ProductCardProps) {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+  const isAvailable = product.stockStatus === 'in-stock';
+
   return (
-    <Card className={cn("group overflow-hidden transition-all duration-300 hover:shadow-lg", className)}>
-      <Link to={`/product/${product.id}`}>
-        <div className="relative aspect-square overflow-hidden bg-muted">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          {discount > 0 && (
-            <Badge className="absolute top-3 left-3 bg-primary text-white">
-              -{discount}%
+    <Card className={cn(
+      "group overflow-hidden transition-all duration-300 hover:shadow-lg h-full flex flex-col",
+      !isAvailable && "opacity-80 grayscale-[0.2]", // Dim out of stock items
+      className
+    )}>
+      <Link to={`/product/${product.id}`} className="block relative aspect-square overflow-hidden bg-muted">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        {discount > 0 && isAvailable && (
+          <Badge className="absolute top-3 left-3 bg-primary text-white">
+            -{discount}%
+          </Badge>
+        )}
+        {product.stockStatus !== 'in-stock' && (
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
+            <Badge variant="secondary" className="px-4 py-1 text-sm font-medium shadow-sm border border-border">
+              {product.stockStatus === 'out-of-stock' ? 'Out of Stock' : 'Coming Soon'}
             </Badge>
-          )}
-          {product.stockStatus !== 'in-stock' && (
-            <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
-              <Badge variant="secondary" className="px-4 py-1 text-sm font-medium shadow-sm">
-                {product.stockStatus === 'out-of-stock' ? 'Out of Stock' : 'To be Launched'}
-              </Badge>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </Link>
 
-      <CardContent className="p-4">
+      <CardContent className="p-4 flex flex-col flex-grow">
         <Link to={`/product/${product.id}`}>
           <Badge className="mb-2 text-xs bg-secondary/10 text-secondary hover:bg-secondary/20 border-none">
             {product.category}
@@ -56,7 +60,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
           </p>
         </Link>
 
-        <div className="flex items-center justify-between min-h-[40px]">
+        <div className="mt-auto flex items-center justify-between min-h-[40px]">
           {product.stockStatus === 'in-stock' ? (
             <>
               <div className="flex items-center gap-2">
@@ -80,14 +84,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
               </Button>
             </>
           ) : (
-            <div className="flex items-center w-full">
+            <div className="flex items-center w-full justify-center">
               <span className={cn(
-                "text-sm font-semibold px-3 py-1 rounded-full",
+                "text-sm font-semibold px-3 py-1 rounded-full w-full text-center",
                 product.stockStatus === 'out-of-stock'
                   ? "bg-destructive/10 text-destructive"
                   : "bg-primary/10 text-primary"
               )}>
-                {product.stockStatus === 'out-of-stock' ? 'Currently Unavailable' : 'Coming Soon'}
+                {product.stockStatus === 'out-of-stock' ? 'Currently Unavailable' : 'Launching Soon'}
               </span>
             </div>
           )}
@@ -96,3 +100,4 @@ export function ProductCard({ product, className }: ProductCardProps) {
     </Card>
   );
 }
+

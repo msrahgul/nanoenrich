@@ -5,25 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/context/ProductContext';
 import { toast } from '@/hooks/use-toast';
-import { Lock, CreditCard, ArrowLeft, ScanLine, Smartphone, Copy, Check } from 'lucide-react';
+import { Lock, CreditCard, ArrowLeft, ScanLine, Smartphone, Copy, Check, ShieldCheck, Truck, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
 import emailjs from '@emailjs/browser';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { PaymentSettings } from '@/types';
 
-// --- EMAILJS CONFIG ---
+// --- CONFIG ---
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const EMAILJS_TEMPLATE_UNIFIED = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 const LOGO_URL = import.meta.env.VITE_LOGO_URL;
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
-
 
 const indianStates = [
   "ANDAMAN & NICOBAR ISLANDS", "ANDHRA PRADESH", "ARUNACHAL PRADESH", "ASSAM", "BIHAR", "CHANDIGARH", "CHHATTISGARH", "DADRA AND NAGAR HAVELI AND DAMAN AND DIU", "DELHI", "GOA", "GUJARAT", "HARYANA", "HIMACHAL PRADESH", "JAMMU & KASHMIR", "JHARKHAND", "KARNATAKA", "KERALA", "LADAKH", "LAKSHADWEEP", "MADHYA PRADESH", "MAHARASHTRA", "MANIPUR", "MEGHALAYA", "MIZORAM", "NAGALAND", "ODISHA", "PUDUCHERRY", "PUNJAB", "RAJASTHAN", "SIKKIM", "TAMIL NADU", "TELANGANA", "TRIPURA", "UTTAR PRADESH", "UTTARAKHAND", "WEST BENGAL"
@@ -34,13 +34,11 @@ const customerSchema = z.object({
   fullName: z.string().trim().min(2, 'Name is too short'),
   mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number'),
   email: z.string().trim().min(1, 'Email is required').email('Invalid email format'),
-  pincode: z.string().trim().regex(/^\d{6}$/, 'Invalid pincode'),
-  flat: z.string().trim().min(1, 'Address is required'),
-  area: z.string().trim().min(1, 'Area is required'),
-  landmark: z.string().optional(),
-  city: z.string().trim().min(2, 'City is required'),
+  address: z.string().trim().min(5, 'Full address is required'),
   state: z.string().min(1, 'State is required'),
-  transactionId: z.string().trim().min(4, 'Please enter a valid Transaction ID / UTR'),
+  pincode: z.string().trim().regex(/^\d{6}$/, 'Invalid pincode'),
+  transactionId: z.string().trim().min(4, 'Required for verification'),
+  paymentMethod: z.enum(['online']),
 });
 
 const Checkout = () => {
@@ -48,9 +46,10 @@ const Checkout = () => {
   const { items, total, clearCart } = useCart();
   const { placeOrder } = useProducts();
   const [isProcessing, setIsProcessing] = useState(false);
+
   const [formData, setFormData] = useState({
-    fullName: '', mobile: '', email: '', pincode: '', flat: '', area: '', landmark: '', city: '', state: '',
-    transactionId: ''
+    fullName: '', mobile: '', email: '', address: '', state: '', pincode: '',
+    transactionId: '', paymentMethod: 'online' as 'online'
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -61,7 +60,6 @@ const Checkout = () => {
   useEffect(() => {
     if (items.length === 0) navigate('/cart');
 
-    // Fetch Payment Settings
     const fetchSettings = async () => {
       const docRef = doc(db, 'settings', 'payment_config');
       const docSnap = await getDoc(docRef);
@@ -103,13 +101,10 @@ const Checkout = () => {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    // 1. Validate Form
     const result = customerSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -117,18 +112,23 @@ const Checkout = () => {
         if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
       });
       setErrors(fieldErrors);
-      toast({ title: "Check Fields", description: "Please fill in all required fields.", variant: "destructive" });
+      toast({ title: "Check Fields", description: "Please fill in all required fields correctly.", variant: "destructive" });
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      // 2. Save to Firestore
-      const orderData = { customer: formData, items, total, transactionId: formData.transactionId };
+      const orderData = {
+        customer: formData,
+        items,
+        total,
+        transactionId: formData.transactionId,
+        paymentMethod: 'online',
+        status: 'pending'
+      };
       const orderId = await placeOrder(orderData);
 
-      // 4. Prepare Common Data (Items List & Address)
       const itemsList = items.map(item => `
         <tr style="border-bottom: 1px solid #eee;">
           <td style="padding: 12px;">${item.product.name}</td>
@@ -136,57 +136,38 @@ const Checkout = () => {
           <td align="right">₹${(item.product.price * item.quantity).toFixed(2)}</td>
         </tr>`).join('');
 
-      const cleanAddress = [
-        formData.flat,
-        formData.area,
-        formData.landmark,
-        formData.city,
-        `${formData.state} - ${formData.pincode}`
-      ].filter(Boolean).join(', ');
+      const cleanAddress = `${formData.address}, ${formData.state} - ${formData.pincode}`;
 
-      // --- EMAIL 1: CUSTOMER CONFIRMATION ---
       const customerParams = {
-        // Configuration
         to_email: formData.email,
-        to_name: formData.fullName,       // "Hi Sara"
+        to_name: formData.fullName,
         logo_url: LOGO_URL,
         website_link: window.location.origin,
         reply_to: ADMIN_EMAIL,
-
-        // Content
         subject: `Order Confirmation #${orderId} - NanoEnrich`,
-        status_title: `Order Confirmation #${orderId}`,
-        status_message: "Thank you for your order! We have received your request and payment details. We will verify the transaction and ship your items shortly.",
-        highlight_info: `Payment Info: UTR ${formData.transactionId}`, // Shows UTR to customer
-
-        // Data
+        status_title: `Order Received #${orderId}`,
+        status_message: "Thank you for your order! We have received your payment details. We will verify the transaction and ship your items shortly.",
+        highlight_info: `Method: Online (UTR: ${formData.transactionId})`,
         order_items: itemsList,
         total: total.toFixed(2),
         customer_address: cleanAddress,
       };
 
-      // --- EMAIL 2: ADMIN ALERT (Reusing same template) ---
       const adminParams = {
-        // Configuration
         to_email: ADMIN_EMAIL,
-        to_name: "Admin",                        // "Hi Admin"
+        to_name: "Admin",
         logo_url: LOGO_URL,
         website_link: window.location.origin + "/login",
         reply_to: formData.email,
-
-        // Content
         subject: `🔔 New Order: #${orderId} - ₹${total.toFixed(2)}`,
         status_title: `New Order Alert: #${orderId}`,
-        status_message: `<b>${formData.fullName}</b> has placed a new order. <br/>Mobile: ${formData.mobile} <br/>Email: ${formData.email} <br/>Please verify the payment UTR below.`,
-        highlight_info: `VERIFY PAYMENT: UTR ${formData.transactionId}`, // Highlight for Admin
-
-        // Data
+        status_message: `<b>${formData.fullName}</b> has placed a new order via <b>ONLINE (UPI)</b>. <br/>Mobile: ${formData.mobile} <br/>Email: ${formData.email}`,
+        highlight_info: `PAYMENT: UTR ${formData.transactionId}`,
         order_items: itemsList,
         total: total.toFixed(2),
         customer_address: cleanAddress,
       };
 
-      // 5. Send Both Emails in Parallel
       await Promise.all([
         emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_UNIFIED, customerParams, EMAILJS_PUBLIC_KEY),
         emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_UNIFIED, adminParams, EMAILJS_PUBLIC_KEY)
@@ -211,221 +192,230 @@ const Checkout = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <button onClick={() => navigate('/cart')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back to Cart
-        </button>
+      <div className="min-h-screen bg-background pb-20">
 
-        <h1 className="font-serif text-3xl font-bold text-secondary mb-8">Checkout</h1>
+        {/* Sticky Header */}
+        <div className="bg-card border-b border-border sticky top-14 md:top-16 z-30">
+          <div className="container mx-auto px-4 py-3 md:py-4 flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/cart')} className="h-8 gap-1 pl-0 hover:bg-transparent text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back</span>
+            </Button>
+            <h1 className="text-lg md:text-xl font-bold flex-1 text-center sm:text-left text-secondary">Secure Checkout</h1>
+            <ShieldCheck className="h-5 w-5 text-green-600 hidden sm:block" />
+          </div>
+        </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="container mx-auto px-4 py-6 md:py-8">
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
 
-            <form onSubmit={handleSubmit} id="checkout-form" className="space-y-6">
-              <Card>
-                <CardHeader><CardTitle>Delivery Information</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Name & Mobile */}
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Full Name *</Label>
-                      <Input name="fullName" placeholder="Enter your name" value={formData.fullName} onChange={handleChange} className={errors.fullName ? 'border-destructive' : ''} />
-                      {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Mobile Number *</Label>
-                      <Input name="mobile" placeholder="10-digit number" value={formData.mobile} onChange={handleChange} className={errors.mobile ? 'border-destructive' : ''} />
-                      {errors.mobile && <p className="text-xs text-destructive">{errors.mobile}</p>}
-                    </div>
-                  </div>
+              {/* LEFT: Forms */}
+              <div className="lg:col-span-7 xl:col-span-8 space-y-6">
 
-                  {/* Email */}
-                  <div className="space-y-2">
-                    <Label>Email *</Label>
-                    <Input name="email" type="email" placeholder="Required for order receipt" value={formData.email} onChange={handleChange} className={errors.email ? 'border-destructive' : ''} />
-                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-                  </div>
-
-                  {/* Address */}
-                  <div className="space-y-2">
-                    <Label>Pincode *</Label>
-                    <Input name="pincode" placeholder="6-digit pincode" value={formData.pincode} onChange={handleChange} className={errors.pincode ? 'border-destructive' : ''} />
-                    {errors.pincode && <p className="text-xs text-destructive">{errors.pincode}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Flat/House No. *</Label>
-                    <Input name="flat" placeholder="Apartment, Studio, or Floor" value={formData.flat} onChange={handleChange} className={errors.flat ? 'border-destructive' : ''} />
-                    {errors.flat && <p className="text-xs text-destructive">{errors.flat}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Area/Street *</Label>
-                    <Input name="area" placeholder="Street Name, Area" value={formData.area} onChange={handleChange} className={errors.area ? 'border-destructive' : ''} />
-                    {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Landmark</Label>
-                    <Input name="landmark" placeholder="E.g. Near Apollo Hospital" value={formData.landmark} onChange={handleChange} />
-                  </div>
-
-                  {/* City & State */}
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Town/City *</Label>
-                      <Input name="city" placeholder="City" value={formData.city} onChange={handleChange} className={errors.city ? 'border-destructive' : ''} />
-                      {errors.city && <p className="text-xs text-destructive">{errors.city}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>State *</Label>
-                      <Select onValueChange={(val) => handleSelect('state', val)} value={formData.state}>
-                        <SelectTrigger className={errors.state ? 'border-destructive' : ''}>
-                          <SelectValue placeholder="Choose a state" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {indianStates.map(st => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      {errors.state && <p className="text-xs text-destructive">{errors.state}</p>}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Payment Section - Now Second */}
-              {paymentConfig && (
-                <Card className="border-primary/20 bg-primary/5 shadow-lg overflow-hidden">
-                  <div className="bg-primary/10 px-6 py-3 border-b border-primary/10">
-                    <CardTitle className="flex items-center gap-2 text-primary text-lg">
-                      <ScanLine className="h-5 w-5" /> Finalize Payment
-                    </CardTitle>
-                  </div>
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
-
-                      {/* QR Code */}
-                      <div className="space-y-2">
-                        <div className="bg-white p-3 rounded-lg shadow-sm border inline-block">
-                          <img src={paymentConfig.qrImageUrl || "/placeholder.svg"} alt="UPI QR" className="w-48 h-48 object-contain" />
-                        </div>
-                        <p className="text-xs text-muted-foreground">Scan with any UPI App</p>
+                {/* Shipping Card */}
+                <Card className="shadow-sm border-border overflow-hidden">
+                  <CardHeader className="bg-muted/30 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/10 p-2 rounded-full text-primary">
+                        <Truck className="h-5 w-5" />
                       </div>
+                      <div>
+                        <CardTitle className="text-lg md:text-xl">Delivery Details</CardTitle>
+                        <CardDescription className="text-xs">Enter your delivery information.</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Full Name *</Label>
+                        <Input name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} className={errors.fullName ? 'border-destructive' : ''} />
+                        {errors.fullName && <p className="text-[10px] text-destructive">{errors.fullName}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Mobile Number *</Label>
+                        <Input name="mobile" placeholder="10-digit mobile" value={formData.mobile} onChange={handleChange} className={errors.mobile ? 'border-destructive' : ''} />
+                        {errors.mobile && <p className="text-[10px] text-destructive">{errors.mobile}</p>}
+                      </div>
+                    </div>
 
-                      <div className="flex-1 space-y-6 w-full text-left">
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Payable Amount</p>
-                          <p className="text-4xl font-extrabold text-secondary">₹{total.toFixed(2)}</p>
-                        </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Email Address *</Label>
+                      <Input name="email" type="email" placeholder="email@example.com" value={formData.email} onChange={handleChange} className={errors.email ? 'border-destructive' : ''} />
+                      {errors.email && <p className="text-[10px] text-destructive">{errors.email}</p>}
+                    </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {/* Pay Button - Mobile Only */}
-                          <a href={getUPILink()} target="_blank" rel="noreferrer" className="w-full block md:hidden">
-                            <Button className="w-full bg-green-600 hover:bg-green-700 h-12 shadow-md font-bold">
-                              <Smartphone className="mr-2 h-4 w-4" /> Pay via UPI App
-                            </Button>
-                          </a>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Full Address *</Label>
+                      <Input name="address" placeholder="House No, Street Name, Area, City" value={formData.address} onChange={handleChange} className={errors.address ? 'border-destructive' : ''} />
+                      {errors.address && <p className="text-[10px] text-destructive">{errors.address}</p>}
+                    </div>
 
-                          {/* Copy Link Button */}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleCopyLink}
-                            className="w-full border-primary/20 hover:bg-primary/5 h-12 shadow-sm font-medium"
-                          >
-                            {isCopied ? (
-                              <><Check className="mr-2 h-4 w-4 text-green-600" /> Copied!</>
-                            ) : (
-                              <><Copy className="mr-2 h-4 w-4" /> Copy Payment Link</>
-                            )}
-                          </Button>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center justify-between bg-white/50 p-2.5 rounded-md text-sm border border-dashed border-primary/30">
-                            <span className="text-muted-foreground truncate mr-2">
-                              UPI: <span className="font-mono font-semibold text-foreground select-all">{paymentConfig.upiId}</span>
-                            </span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 hover:bg-primary/10"
-                              onClick={() => {
-                                navigator.clipboard.writeText(paymentConfig.upiId);
-                                toast({ title: "UPI ID Copied" });
-                              }}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="bg-white p-5 rounded-xl border-2 border-primary/20 space-y-4 shadow-sm relative group transition-all duration-300 hover:border-primary/40">
-                          <div className="space-y-2">
-                            <Label className="text-xs text-primary uppercase font-bold tracking-widest">Step 3: Enter Transaction ID (UTR) *</Label>
-                            <Input
-                              name="transactionId"
-                              placeholder="12-digit number from payment screen"
-                              value={formData.transactionId}
-                              onChange={handleChange}
-                              className={`h-12 text-lg font-mono tracking-widest ${errors.transactionId ? 'border-destructive' : 'border-primary/20 focus:border-primary'}`}
-                            />
-                            {errors.transactionId ? (
-                              <p className="text-xs text-destructive font-medium">{errors.transactionId}</p>
-                            ) : (
-                              <p className="text-xs text-muted-foreground italic">Important: Your order will be verified using this ID.</p>
-                            )}
-                          </div>
-                        </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">State *</Label>
+                        <Select onValueChange={(val) => handleSelect('state', val)} value={formData.state}>
+                          <SelectTrigger className={errors.state ? 'border-destructive' : ''}>
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {indianStates.map(st => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        {errors.state && <p className="text-[10px] text-destructive">{errors.state}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Pincode *</Label>
+                        <Input name="pincode" placeholder="6-digit pincode" value={formData.pincode} onChange={handleChange} className={errors.pincode ? 'border-destructive' : ''} />
+                        {errors.pincode && <p className="text-[10px] text-destructive">{errors.pincode}</p>}
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="bg-primary/5 border-t border-primary/10 p-6">
-                    <Button
-                      type="submit"
-                      className="w-full bg-primary hover:bg-primary/90 text-white h-14 text-lg font-bold shadow-xl transition-all active:scale-95"
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? 'Processing Order...' : (
-                        <>
-                          <CreditCard className="mr-3 h-5 w-5" />
-                          Confirm & Place Order
-                        </>
-                      )}
-                    </Button>
-                  </CardFooter>
                 </Card>
-              )}
-            </form>
-            <div className="flex items-center gap-2 justify-center mt-4 text-sm text-muted-foreground">
-              <Lock className="h-4 w-4" />
-              <span>Your payment information is handled securely</span>
-            </div>
-          </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-24">
-              <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-hide space-y-4">
-                  {items.map(i => (
-                    <div key={i.product.id} className="flex gap-3">
-                      <img src={i.product.image} alt={i.product.name} className="w-16 h-16 object-cover rounded" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{i.product.name}</p>
-                        <p className="text-xs text-muted-foreground">Qty: {i.quantity}</p>
-                        <p className="text-sm font-medium">₹{(i.product.price * i.quantity).toFixed(2)}</p>
+                {/* Payment Card */}
+                <Card className="shadow-sm border-border overflow-hidden">
+                  <CardHeader className="bg-muted/30 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/10 p-2 rounded-full text-primary">
+                        <CreditCard className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg md:text-xl">Payment Method</CardTitle>
+                        <CardDescription className="text-xs">Secure UPI Payment</CardDescription>
                       </div>
                     </div>
-                  ))}
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <RadioGroup defaultValue="online" className="grid grid-cols-1">
+                      <div>
+                        <RadioGroupItem value="online" id="online" className="peer sr-only" />
+                        <Label
+                          htmlFor="online"
+                          className="flex flex-col items-center justify-between rounded-xl border-2 border-primary bg-primary/[0.02] p-4 cursor-pointer transition-all h-full"
+                        >
+                          <ScanLine className="mb-3 h-6 w-6 text-primary" />
+                          <span className="font-bold text-sm">Online (UPI QR)</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+
+                    {/* Online Payment Content */}
+                    {paymentConfig && (
+                      <div className="mt-6 p-4 md:p-6 rounded-2xl bg-primary/[0.03] border border-primary/10 space-y-6">
+                        <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                          <div className="space-y-2 shrink-0 text-center">
+                            <div className="bg-white p-3 rounded-xl shadow-sm border inline-block">
+                              <img src={paymentConfig.qrImageUrl || "/placeholder.svg"} alt="UPI QR" className="w-36 h-36 md:w-44 md:h-44 object-contain" />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground italic">Scan to Pay via any UPI App</p>
+                          </div>
+
+                          <div className="flex-1 space-y-4 w-full min-w-0">
+                            <div className="space-y-1 text-center md:text-left">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Payable Amount</p>
+                              <p className="text-3xl md:text-4xl font-black text-secondary">₹{total.toFixed(2)}</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <a href={getUPILink()} target="_blank" rel="noreferrer" className="w-full block md:hidden">
+                                <Button type="button" className="w-full bg-green-600 hover:bg-green-700 h-10 shadow-sm font-bold text-xs">
+                                  <Smartphone className="mr-2 h-4 w-4" /> Open UPI App
+                                </Button>
+                              </a>
+                              <Button type="button" variant="outline" onClick={handleCopyLink} className="w-full border-primary/20 hover:bg-primary/5 h-10 text-xs font-medium">
+                                {isCopied ? <><Check className="mr-2 h-3 w-3 text-green-600" /> Copied</> : <><Copy className="mr-2 h-3 w-3" /> Copy Payment Link</>}
+                              </Button>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-primary/10 w-full min-w-0">
+                              <span className="text-[11px] md:text-sm text-muted-foreground truncate mr-2 flex-1 min-w-0">
+                                UPI: <span className="font-mono font-bold text-foreground select-all">{paymentConfig.upiId}</span>
+                              </span>
+                              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 shrink-0" onClick={() => { navigator.clipboard.writeText(paymentConfig.upiId); toast({ title: "UPI ID Copied" }); }}>
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 bg-white/80 p-4 rounded-xl border border-primary/20 shadow-sm">
+                          <Label className="text-[10px] md:text-xs text-primary uppercase font-black tracking-widest block">Enter Transaction ID (UTR) *</Label>
+                          <Input
+                            name="transactionId"
+                            placeholder="12-digit number from UPI app"
+                            value={formData.transactionId}
+                            onChange={handleChange}
+                            className={`h-10 md:h-12 text-sm md:text-lg font-mono text-center md:text-left ${errors.transactionId ? 'border-destructive' : 'border-primary/20 focus:border-primary'}`}
+                          />
+                          {errors.transactionId ? <p className="text-[10px] text-destructive font-bold">{errors.transactionId}</p> : <p className="text-[9px] md:text-xs text-muted-foreground italic">Your order will be verified using this ID.</p>}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* RIGHT: Summary (Sticky & Scrollable) */}
+              <div className="lg:col-span-5 xl:col-span-4 mt-4 lg:mt-12">
+                <div className="lg:sticky lg:top-36">
+                  <Card className="shadow-md border-border overflow-hidden flex flex-col max-h-[calc(100vh-10rem)]">
+                    <CardHeader className="bg-muted/40 pb-4 shrink-0">
+                      <CardTitle className="text-lg">Order Summary</CardTitle>
+                    </CardHeader>
+
+                    {/* Scrollable Content Area */}
+                    <CardContent className="flex-1 overflow-y-auto p-0 scrollbar-hide">
+                      <div className="p-4 md:p-6 space-y-4">
+                        {items.map((item) => (
+                          <div key={item.product.id} className="flex gap-4">
+                            <div className="h-14 w-14 md:h-16 md:w-16 rounded-lg border bg-muted shrink-0 overflow-hidden shadow-sm">
+                              <img src={item.product.image} alt={item.product.name} className="h-full w-full object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs md:text-sm font-semibold text-foreground line-clamp-2 leading-tight">{item.product.name}</p>
+                              <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Qty: {item.quantity} × ₹{item.product.price}</p>
+                            </div>
+                            <div className="text-xs md:text-sm font-bold text-secondary">₹{(item.product.price * item.quantity).toFixed(0)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+
+                    {/* Footer stays at bottom of card */}
+                    <CardFooter className="bg-muted/40 p-4 md:p-6 flex flex-col gap-4 border-t border-border mt-auto shrink-0">
+                      <div className="w-full space-y-2">
+                        <div className="flex justify-between text-xs md:text-sm">
+                          <span className="text-muted-foreground">Subtotal</span>
+                          <span className="font-medium">₹{total.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs md:text-sm">
+                          <span className="text-muted-foreground">Shipping</span>
+                          <span className="text-green-600 font-bold">FREE</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-base md:text-lg">Total</span>
+                          <span className="font-black text-xl md:text-2xl text-secondary">₹{total.toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      <Button type="submit" className="w-full text-base md:text-lg h-12 md:h-14 font-bold shadow-xl transition-all active:scale-95" size="lg" disabled={isProcessing}>
+                        {isProcessing ? <><div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Processing...</> : <><CheckCircle2 className="mr-2 h-5 w-5" /> Place Order</>}
+                      </Button>
+
+                      <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+                        <Lock className="h-3 w-3" />
+                        <span>Securely processed via encrypted gateway</span>
+                      </div>
+                    </CardFooter>
+                  </Card>
                 </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>₹{total.toFixed(2)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+
+            </div>
+          </form>
         </div>
       </div>
     </Layout>

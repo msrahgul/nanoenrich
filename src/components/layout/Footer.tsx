@@ -1,7 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Leaf, Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
+import { useProducts } from '@/context/ProductContext';
 
 export function Footer() {
+  const { categories } = useProducts();
+
+  // Get first 5 categories (excluding 'All') to display in footer
+  const footerCategories = categories
+    .filter(c => c !== 'All')
+    .slice(0, 5);
+
   return (
     <footer className="bg-card border-t border-border">
       <div className="container mx-auto px-4 py-12">
@@ -58,30 +66,20 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Dynamic Categories */}
           <div>
             <h3 className="font-semibold text-secondary mb-4">Categories</h3>
             <ul className="space-y-2">
-              <li>
-                <Link to="/products?category=Skincare" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Skincare
-                </Link>
-              </li>
-              <li>
-                <Link to="/products?category=Supplements" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Supplements
-                </Link>
-              </li>
-              <li>
-                <Link to="/products?category=Hair Care" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Hair Care
-                </Link>
-              </li>
-              <li>
-                <Link to="/products?category=Wellness" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Wellness
-                </Link>
-              </li>
+              {footerCategories.map((category) => (
+                <li key={category}>
+                  <Link
+                    to={`/products?category=${encodeURIComponent(category)}`}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {category}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -107,9 +105,20 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border mt-8 pt-8 text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="border-t border-border mt-8 pt-8 text-center flex flex-col md:flex-row justify-between items-center gap-2">
+          <p className="text-sm text-muted-foreground order-2 md:order-1">
             © {new Date().getFullYear()} NanoEnrich. All rights reserved.
+          </p>
+          <p className="text-xs text-muted-foreground order-1 md:order-2">
+            Designed and developed by{" "}
+            <a
+              href="https://rahgulms.netlify.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              RAHGUL M S
+            </a>
           </p>
         </div>
       </div>

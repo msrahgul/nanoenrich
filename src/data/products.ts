@@ -149,6 +149,8 @@ export const searchProducts = (query: string): Product[] => {
   );
 };
 
+// Updated to exclude 'to-be-launched' products from featured list
 export const getFeaturedProducts = (): Product[] => {
-  return products.filter(p => p.featured);
+  return products.filter(p => p.featured && p.stockStatus !== 'to-be-launched');
 };
+

@@ -38,11 +38,7 @@ export interface Order {
   transactionId?: string; // Added for UPI tracking
 }
 
-export interface Subscriber {
-  id: string;
-  email: string;
-  date: string;
-}
+
 
 // Added interface for Payment Settings
 export interface PaymentSettings {

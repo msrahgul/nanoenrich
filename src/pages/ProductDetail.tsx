@@ -19,6 +19,8 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
 
   const product = id ? getProductById(id) : undefined;
+
+  // Exclude current product and get related
   const relatedProducts = getFeaturedProducts()
     .filter((p) => p.id !== id)
     .slice(0, 4);
@@ -26,10 +28,10 @@ const ProductDetail = () => {
   if (!product) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
+        <div className="container mx-auto px-4 py-16 text-center flex flex-col items-center justify-center min-h-[50vh]">
           <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
           <p className="text-muted-foreground mb-6">
-            The product you're looking for doesn't exist or has been removed.
+            The product you're looking for doesn't exist.
           </p>
           <Link to="/products">
             <Button>Browse Products</Button>
@@ -54,21 +56,21 @@ const ProductDetail = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
+      <div className="container mx-auto px-4 py-6 md:py-8">
+        {/* Breadcrumb / Back */}
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm font-medium"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+          Back to Products
         </button>
 
-        {/* Product Details */}
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Image */}
-          <div className="relative">
-            <div className="aspect-square rounded-xl overflow-hidden bg-muted">
+        {/* Product Layout */}
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-start">
+          {/* Image Section */}
+          <div className="relative w-full">
+            <div className="aspect-square w-full max-w-md mx-auto lg:max-w-none rounded-xl overflow-hidden bg-muted border border-border">
               <img
                 src={product.image}
                 alt={product.name}
@@ -76,114 +78,120 @@ const ProductDetail = () => {
               />
             </div>
             {discount > 0 && (
-              <Badge className="absolute top-4 left-4 bg-primary text-white text-sm">
+              <Badge className="absolute top-4 left-4 bg-primary text-white text-xs md:text-sm px-3 py-1">
                 -{discount}% OFF
               </Badge>
             )}
           </div>
 
-          {/* Details */}
+          {/* Details Section */}
           <div className="flex flex-col">
-            <Badge variant="outline" className="w-fit mb-3">
-              {product.category}
-            </Badge>
+            <div className="mb-4">
+              <Badge variant="outline" className="mb-3 text-secondary border-secondary/30">
+                {product.category}
+              </Badge>
+              <h1 className="font-serif text-2xl md:text-4xl font-bold text-secondary leading-tight mb-2">
+                {product.name}
+              </h1>
+            </div>
 
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-secondary mb-4">
-              {product.name}
-            </h1>
-
+            {/* Price Block */}
             {product.stockStatus === 'in-stock' && (
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-end gap-3 mb-6 bg-accent/20 p-4 rounded-lg w-full md:w-fit">
                 <span className="text-3xl font-bold text-secondary">₹{product.price}</span>
                 {product.originalPrice && (
-                  <>
-                    <span className="text-xl text-muted-foreground line-through">
+                  <div className="flex flex-col mb-1">
+                    <span className="text-sm text-muted-foreground line-through">
                       ₹{product.originalPrice}
                     </span>
-                    <Badge variant="secondary">Save ₹{product.originalPrice - product.price}</Badge>
-                  </>
+                    <span className="text-xs text-green-600 font-medium">
+                      Save ₹{product.originalPrice - product.price}
+                    </span>
+                  </div>
                 )}
               </div>
             )}
 
-            <p className="text-muted-foreground mb-6">{product.longDescription}</p>
+            <p className="text-sm md:text-base text-muted-foreground mb-6 leading-relaxed">
+              {product.longDescription}
+            </p>
 
-            {/* Benefits */}
+            {/* Key Benefits */}
             {product.benefits && product.benefits.length > 0 && (
               <div className="mb-6">
-                <h3 className="font-semibold text-foreground mb-3">Benefits</h3>
-                <ul className="space-y-2">
+                <h3 className="font-semibold text-foreground mb-3 text-sm uppercase tracking-wider">Benefits</h3>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {product.benefits.map((benefit, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
                       <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                      {benefit}
+                      <span>{benefit}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {/* Ingredients */}
-            {product.ingredients && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-foreground mb-2">Key Ingredients</h3>
-                <p className="text-sm text-muted-foreground">{product.ingredients}</p>
-              </div>
-            )}
-
             <Separator className="my-6" />
 
-            {/* Quantity & Add to Cart */}
+            {/* Action Buttons */}
             {product.stockStatus === 'in-stock' ? (
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex items-center border border-border rounded-lg">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={quantity <= 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-12 text-center font-medium">{quantity}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setQuantity(quantity + 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium">Quantity:</span>
+                  <div className="flex items-center border border-border rounded-lg bg-background">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-12 text-center font-medium">{quantity}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10"
+                      onClick={() => setQuantity(quantity + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="flex-1"
-                  onClick={handleAddToCart}
-                >
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  Add to Cart
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex-1 h-12 text-base"
+                    onClick={handleAddToCart}
+                  >
+                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    Add to Cart
+                  </Button>
 
-                <Button
-                  className="flex-1 bg-primary hover:bg-primary/90 text-white"
-                  onClick={handleBuyNow}
-                >
-                  Buy Now
-                </Button>
+                  <Button
+                    size="lg"
+                    className="flex-1 h-12 text-base bg-primary hover:bg-primary/90 text-white"
+                    onClick={handleBuyNow}
+                  >
+                    Buy Now
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className={cn(
-                "p-4 rounded-xl border flex items-center gap-3",
+                "p-4 rounded-xl border flex items-center justify-center gap-3 text-center",
                 product.stockStatus === 'out-of-stock'
                   ? "bg-destructive/5 border-destructive/20 text-destructive"
                   : "bg-primary/5 border-primary/20 text-primary"
               )}>
                 <div className={cn(
-                  "h-2 w-2 rounded-full animate-pulse",
+                  "h-2 w-2 rounded-full animate-pulse shrink-0",
                   product.stockStatus === 'out-of-stock' ? "bg-destructive" : "bg-primary"
                 )} />
-                <p className="font-semibold">
+                <p className="font-semibold text-sm md:text-base">
                   {product.stockStatus === 'out-of-stock'
                     ? "Currently Out of Stock"
                     : "Coming Soon - To be Launched"}
@@ -191,23 +199,34 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Trust Badge */}
-            <Card className="mt-6 bg-accent/30">
-              <CardContent className="p-4 flex items-center gap-3">
-                <Leaf className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">100% Natural & Organic</p>
-                  <p className="text-xs text-muted-foreground">Free from harmful chemicals and additives</p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Trust Badges */}
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              <Card className="bg-transparent border-dashed">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <Leaf className="h-5 w-5 text-primary shrink-0" />
+                  <div className="text-xs">
+                    <p className="font-semibold text-foreground">100% Natural</p>
+                    <p className="text-muted-foreground">Organic Ingredients</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-transparent border-dashed">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <Check className="h-5 w-5 text-primary shrink-0" />
+                  <div className="text-xs">
+                    <p className="font-semibold text-foreground">Quality Tested</p>
+                    <p className="text-muted-foreground">Certified Safe</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <section className="mt-16">
-            <h2 className="font-serif text-2xl font-bold text-foreground mb-8">
+          <section className="mt-16 md:mt-24 border-t border-border pt-12">
+            <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-8 text-center md:text-left">
               You May Also Like
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
