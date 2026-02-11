@@ -119,8 +119,10 @@ const Checkout = () => {
     setIsProcessing(true);
 
     try {
+      const { transactionId, paymentMethod, ...customerDetails } = formData;
+
       const orderData = {
-        customer: formData,
+        customer: customerDetails,
         items,
         total,
         transactionId: formData.transactionId,

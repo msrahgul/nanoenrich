@@ -27,7 +27,6 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
     price: '',
     originalPrice: '',
     description: '',
-    longDescription: '',
     category: '',
     image: '',
     ingredients: '',
@@ -45,7 +44,6 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
         price: product.price.toString(),
         originalPrice: product.originalPrice?.toString() || '',
         description: product.description,
-        longDescription: product.longDescription,
         category: product.category,
         image: product.image,
         ingredients: product.ingredients || '',
@@ -59,7 +57,6 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
         price: '',
         originalPrice: '',
         description: '',
-        longDescription: '',
         category: categories.find(c => c !== 'All') || '',
         image: '',
         ingredients: '',
@@ -101,7 +98,6 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
 
 
       description: formData.description,
-      longDescription: formData.longDescription,
       category: formData.category,
       image: formData.image || '/placeholder.svg',
       ingredients: formData.ingredients || undefined,
@@ -193,23 +189,13 @@ const ProductForm = ({ product, open, onClose }: ProductFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Short Description *</Label>
-            <Input
+            <Label htmlFor="description">Description *</Label>
+            <Textarea
               id="description"
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Brief product description"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="longDescription">Long Description</Label>
-            <Textarea
-              id="longDescription"
-              value={formData.longDescription}
-              onChange={e => setFormData(prev => ({ ...prev, longDescription: e.target.value }))}
-              placeholder="Detailed product description"
-              rows={3}
+              placeholder="Enter product description"
+              rows={4}
             />
           </div>
 

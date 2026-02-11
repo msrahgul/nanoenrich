@@ -113,7 +113,7 @@ const ProductDetail = () => {
             )}
 
             <p className="text-sm md:text-base text-muted-foreground mb-6 leading-relaxed">
-              {product.longDescription}
+              {product.description}
             </p>
 
             {/* Key Benefits */}
@@ -128,6 +128,16 @@ const ProductDetail = () => {
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {/* Ingredients Section */}
+            {product.ingredients && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-foreground mb-3 text-sm uppercase tracking-wider">Ingredients</h3>
+                <p className="text-sm text-muted-foreground italic">
+                  {product.ingredients}
+                </p>
               </div>
             )}
 

@@ -4,7 +4,6 @@ export interface Product {
   price: number;
   originalPrice?: number;
   description: string;
-  longDescription: string;
   category: string;
   image: string;
   ingredients?: string;
@@ -24,12 +23,9 @@ export interface Order {
     fullName: string;
     mobile: string;
     email: string;
-    pincode: string;
-    flat: string;
-    area: string;
-    landmark: string;
-    city: string;
+    address: string;
     state: string;
+    pincode: string;
   };
   items: CartItem[];
   total: number;

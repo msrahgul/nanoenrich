@@ -15,10 +15,19 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { totalItems } = useCart();
   const { isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -39,8 +48,15 @@ export function Navbar() {
     navigate('/login');
   };
 
+  const isHomePage = location.pathname === '/';
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+    <header className={cn(
+      "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300",
+      (isScrolled || !isHomePage)
+        ? "bg-white/80 backdrop-blur-md shadow-sm border-b border-emerald-900/10 py-0"
+        : "bg-white shadow-sm lg:bg-transparent lg:shadow-none py-2 md:py-4 border-transparent"
+    )}>
       <nav className="container mx-auto px-4">
         <div className="flex h-14 md:h-16 items-center justify-between">
           {/* Logo */}
@@ -52,8 +68,8 @@ export function Navbar() {
             />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6 lg:gap-8">
+          {/* Desktop Navigation - Hidden until lg (large tablet/laptop) */}
+          <div className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
@@ -81,42 +97,29 @@ export function Navbar() {
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-2 md:gap-4">
-            <Link to="/products" className="hidden sm:flex">
-              <Button variant="ghost" size="icon" className="hover:bg-primary/10">
-                <Search className="h-5 w-5" />
-              </Button>
-            </Link>
-
+          <div className="flex items-center gap-1 md:gap-4">
             <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+              <Button variant="ghost" size="icon" className={cn(
+                "h-9 w-9 hover:bg-emerald-50 text-emerald-900 transition-colors",
+                (isScrolled || !isHomePage) ? "" : "lg:text-white lg:hover:bg-white/10"
+              )}>
                 <ShoppingCart className="h-5 w-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
                     {totalItems}
                   </span>
                 )}
               </Button>
             </Link>
 
-            {/* Logout (Desktop) */}
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="hidden md:flex text-destructive hover:text-destructive hover:bg-destructive/10"
-                title="Logout"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            )}
-
-            {/* Mobile Menu Button */}
+            {/* Mobile/Tablet Menu Toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className={cn(
+                "lg:hidden h-9 w-9 hover:bg-emerald-50 text-emerald-900",
+                (isScrolled || !isHomePage) ? "" : "lg:text-white lg:hover:bg-white/10"
+              )}
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
             >
@@ -125,48 +128,36 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Navigation Overlay */}
+        {/* Neat & Proper Mobile Dropdown */}
         {isOpen && (
-          <div className="fixed inset-0 top-[57px] z-50 bg-background md:hidden animate-in fade-in slide-in-from-top-5 duration-200 flex flex-col">
-            <div className="flex flex-col p-4 gap-2 border-t border-border bg-background h-full overflow-y-auto">
+          <div className="absolute top-full left-0 w-full bg-white shadow-xl border-t border-emerald-900/5 lg:hidden animate-in slide-in-from-top-2 duration-300">
+            <div className="container mx-auto px-4 py-4 flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
+                  onClick={() => setIsOpen(false)}
                   className={cn(
-                    "text-lg font-medium py-4 px-4 rounded-lg transition-colors flex items-center justify-between",
+                    "px-4 py-3 rounded-lg text-lg font-medium transition-colors flex items-center justify-between",
                     location.pathname === link.path
-                      ? "bg-secondary/10 text-secondary"
-                      : "text-foreground hover:bg-accent"
+                      ? "bg-emerald-50 text-emerald-900"
+                      : "text-emerald-900 hover:bg-emerald-50/50"
                   )}
                 >
                   {link.name}
-                  {location.pathname === link.path && <div className="h-2 w-2 rounded-full bg-secondary" />}
+                  {location.pathname === link.path && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  )}
                 </Link>
               ))}
 
-              <div className="my-2 border-t border-border" />
-
-              {isAuthenticated ? (
-                <>
-                  <Link
-                    to="/admin"
-                    className="text-lg font-medium py-3 px-4 rounded-lg text-secondary hover:bg-secondary/10 transition-colors"
-                  >
-                    Admin Dashboard
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    className="justify-start px-4 text-destructive hover:text-destructive hover:bg-destructive/10 text-lg h-auto py-3"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="h-5 w-5 mr-3" />
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <Link to="/login">
-                  <Button className="w-full mt-2" size="lg">Login</Button>
+              {isAuthenticated && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className="px-4 py-3 rounded-lg text-lg font-medium text-secondary hover:bg-emerald-50/50 transition-colors"
+                >
+                  Admin Dashboard
                 </Link>
               )}
             </div>
