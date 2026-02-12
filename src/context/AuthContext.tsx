@@ -5,8 +5,10 @@ import {
   signOut,
   onAuthStateChanged,
   User,
-  signInWithPopup // Added for Google Popup
+  signInWithPopup
 } from 'firebase/auth';
+import { doc, getDoc, collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -25,6 +27,20 @@ const SESSION_DURATION = 10 * 60 * 1000; // 10 minutes inactivity timeout
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [authorizedEmails, setAuthorizedEmails] = useState<string[]>(['nanoenrich@gmail.com']);
+
+  // 0. Listen for Authorized Emails from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'authorized_users'), (snapshot) => {
+      const emails = snapshot.docs.map(doc => doc.id.toLowerCase());
+      // Ensure default is always there
+      if (!emails.includes('nanoenrich@gmail.com')) {
+        emails.push('nanoenrich@gmail.com');
+      }
+      setAuthorizedEmails(emails);
+    });
+    return () => unsub();
+  }, []);
 
   // 1. Listen for Firebase Auth State Changes (Handles Refresh Automatically)
   useEffect(() => {
@@ -68,8 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       // 1. Business Rule: Check if email is in the allowed list before attempting login
-      const allowedEmails = (import.meta.env.VITE_ALLOWED_ADMIN_EMAILS || '').split(',');
-      if (!allowedEmails.includes(email)) {
+      if (!authorizedEmails.includes(email)) {
         throw new Error("Unauthorized: Access restricted");
       }
 
@@ -92,8 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const user = result.user;
 
       // Business Rule: Allow ONLY specified admin emails
-      const allowedEmails = (import.meta.env.VITE_ALLOWED_ADMIN_EMAILS || '').split(',');
-      if (!user.email || !allowedEmails.includes(user.email)) {
+      if (!user.email || !authorizedEmails.includes(user.email)) {
         await signOut(auth); // Immediately sign out unauthorized users
         throw new Error("Unauthorized: Access restricted");
       }
