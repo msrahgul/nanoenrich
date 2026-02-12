@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 import { Product, Order } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/firebase';
@@ -38,6 +39,17 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const [categories, setCategories] = useState<string[]>(['All']);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  // Clear orders when user logs out
+  useEffect(() => {
+    if (!user) {
+      setOrders([]);
+    } else {
+      // Refresh data when user logs in (optional but good)
+      fetchData();
+    }
+  }, [user]);
 
   // Firestore Collections
   const productsCol = collection(db, 'products');

@@ -158,9 +158,7 @@ const Admin = () => {
         </tr>`).join('');
 
       const cleanAddress = [
-        orderData.customer.flat,
-        orderData.customer.area,
-        orderData.customer.city,
+        orderData.customer.address,
         `${orderData.customer.state}-${orderData.customer.pincode}`
       ].filter(Boolean).join(', ');
 
@@ -254,7 +252,7 @@ const Admin = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-muted/40 p-4 md:p-8">
+      <div className="min-h-screen bg-muted/40 p-4 md:p-8 pt-20 md:pt-26">
 
         {/* Dashboard Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-8 gap-4">
@@ -555,7 +553,7 @@ const Admin = () => {
                                     <div className="space-y-1">
                                       <h4 className="font-black mb-2 text-primary uppercase text-[10px] tracking-widest flex items-center gap-1.5"><Users className="h-3 w-3" /> Shipping To</h4>
                                       <p className="font-bold text-secondary">{order.customer.fullName}</p>
-                                      <p className="text-xs text-muted-foreground leading-relaxed">{order.customer.flat}, {order.customer.area}, {order.customer.city} - {order.customer.pincode}</p>
+                                      <p className="text-xs text-muted-foreground leading-relaxed">{order.customer.address}, {order.customer.state} - {order.customer.pincode}</p>
                                       <div className="mt-3 inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-primary/10 shadow-sm">
                                         <Smartphone className="h-3 w-3 text-secondary" />
                                         <span className="text-[11px] font-bold text-secondary">{order.customer.mobile}</span>

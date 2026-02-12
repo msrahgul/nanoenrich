@@ -94,6 +94,17 @@ export function Navbar() {
                 Admin
               </Link>
             )}
+
+            {isAuthenticated && (
+              <button
+                onClick={handleLogout}
+                className="text-sm font-medium text-destructive flex items-center gap-1 hover:text-red-700 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            )}
           </div>
 
           {/* Right Side Actions */}
@@ -159,6 +170,19 @@ export function Navbar() {
                 >
                   Admin Dashboard
                 </Link>
+              )}
+
+              {isAuthenticated && (
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }}
+                  className="px-4 py-3 rounded-lg text-lg font-medium text-destructive hover:bg-red-50 transition-colors flex items-center gap-2"
+                >
+                  <LogOut className="h-5 w-5" />
+                  Logout
+                </button>
               )}
             </div>
           </div>

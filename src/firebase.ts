@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // --- REPLACE WITH YOUR ACTUAL FIREBASE CONFIG KEYS ---
 const firebaseConfig = {
@@ -18,3 +18,4 @@ const app = initializeApp(firebaseConfig);
 // Export the services so other files can use them
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();

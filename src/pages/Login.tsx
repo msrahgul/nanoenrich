@@ -1,81 +1,77 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Layout } from '@/components/layout/Layout';
-import { Lock, User } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    await login(username, password);
-    toast({ title: "Login Successful" });
-    navigate('/admin');
-  } catch (error) {
-    toast({ title: "Login Failed", description: "Invalid email or password", variant: "destructive" });
-  }
-};
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle();
+      toast({ title: "Access Granted", description: "Welcome to the Admin Dashboard" });
+      navigate('/admin');
+    } catch (error: any) {
+      toast({
+        title: "Access Denied",
+        description: error.message || "Unauthorized account",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <Layout>
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-12 px-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="space-y-1 text-center">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-6 h-6 text-primary" />
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-12 px-4 bg-slate-50/50">
+        <Card className="w-full max-w-md shadow-xl border-emerald-900/10">
+          <CardHeader className="space-y-2 text-center pb-8">
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-100 shadow-sm">
+              <ShieldCheck className="w-8 h-8 text-emerald-700" />
             </div>
-            <CardTitle className="text-2xl font-bold text-secondary">Admin Login</CardTitle>
-            <CardDescription>
-              Enter your credentials to access the dashboard
+            <CardTitle className="text-3xl font-serif font-bold text-emerald-900">Admin Portal</CardTitle>
+            <CardDescription className="text-base">
+              Please sign in with your authorized Google account to manage NanoEnrich products.
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleLogin}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="username" 
-                    placeholder="Enter username" 
-                    className="pl-9"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="Enter password" 
-                    className="pl-9"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white">
-                Sign In
-              </Button>
-            </CardFooter>
-          </form>
+
+          <CardContent className="pb-8">
+            <Button
+              type="button"
+              variant="outline"
+              size="xl"
+              className="w-full flex items-center justify-center gap-3 h-14 text-lg font-medium border-emerald-900/10 hover:bg-emerald-50 hover:text-emerald-900 transition-all shadow-sm"
+              onClick={handleGoogleLogin}
+            >
+              <svg className="h-6 w-6" viewBox="0 0 24 24">
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  fill="#EA4335"
+                />
+              </svg>
+              Continue with Google
+            </Button>
+
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              Authorized access only. All login attempts are logged for security.
+            </p>
+          </CardContent>
         </Card>
       </div>
     </Layout>

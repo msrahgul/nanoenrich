@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { auth } from '@/firebase'; // Your new firebase config
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { auth, googleProvider } from '@/firebase'; // Import provider
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User,
+  signInWithPopup // Added for Google Popup
+} from 'firebase/auth';
 import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -8,7 +14,8 @@ interface AuthContextType {
   isLoading: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>; // Add type definition
+  logout: (showToast?: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const resetTimer = () => {
       if (logoutTimer) clearTimeout(logoutTimer);
       logoutTimer = setTimeout(() => {
-        logout();
+        logout(false); // Logout without showing the default success toast
         toast({
           title: "Session Expired",
           description: "Logged out due to inactivity.",
@@ -49,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Activity events
     const events = ['mousemove', 'keydown', 'click', 'scroll'];
     events.forEach(event => window.addEventListener(event, resetTimer));
-    
+
     resetTimer(); // Start timer
 
     return () => {
@@ -60,30 +67,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
+      // 1. Business Rule: Check if email is in the allowed list before attempting login
+      const allowedEmails = (import.meta.env.VITE_ALLOWED_ADMIN_EMAILS || '').split(',');
+      if (!allowedEmails.includes(email)) {
+        throw new Error("Unauthorized: Access restricted");
+      }
+
       await signInWithEmailAndPassword(auth, email, password);
       // No need to set state manually, onAuthStateChanged handles it
-      return; 
+      return;
     } catch (error: any) {
       console.error("Login failed", error);
-      throw new Error(error.message); // Throw to be caught by the Login page
+      // Keep shared error message for unauthorized, otherwise generic
+      if (error.message === "Unauthorized: Access restricted") {
+        throw error;
+      }
+      throw new Error("Invalid email or password");
     }
   };
 
-  const logout = async () => {
+  const loginWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Business Rule: Allow ONLY specified admin emails
+      const allowedEmails = (import.meta.env.VITE_ALLOWED_ADMIN_EMAILS || '').split(',');
+      if (!user.email || !allowedEmails.includes(user.email)) {
+        await signOut(auth); // Immediately sign out unauthorized users
+        throw new Error("Unauthorized: Access restricted");
+      }
+    } catch (error: any) {
+      console.error("Google Login failed", error);
+      throw error;
+    }
+  };
+
+  const logout = async (showToast = true) => {
     try {
       await signOut(auth);
+      if (showToast) {
+        toast({
+          title: "Logged Out",
+          description: "You have been successfully logged out.",
+        });
+      }
     } catch (error) {
       console.error("Logout failed", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated: !!user, 
-      user, 
-      isLoading, 
-      login, 
-      logout 
+    <AuthContext.Provider value={{
+      isAuthenticated: !!user,
+      user,
+      isLoading,
+      login,
+      loginWithGoogle, // Provide the new function
+      logout
     }}>
       {children}
     </AuthContext.Provider>
